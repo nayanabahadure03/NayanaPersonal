@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RAG Simulator — Learn Retrieval-Augmented Generation</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:#11182b;
+    --panel-2:#17213a;
+    --text:#eef2ff;
+    --muted:#9aa6c5;
+    --line:#273352;
+    --accent:#7c9cff;
+    --accent-2:#73e2c1;
+    --warn:#ffcb6b;
+    --danger:#ff7b8f;
+    --ok:#7ee787;
+    --shadow:0 18px 60px rgba(0,0,0,.28);
+    --radius:18px;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(124,156,255,.16), transparent 32%),
+      radial-gradient(circle at top right, rgba(115,226,193,.12), transparent 28%),
+      var(--bg);
+    color:var(--text);
+    min-height:100vh;
+  }
+
+  button,input,textarea,select{font:inherit}
+
+  .app{
+    width:min(1500px, 96vw);
+    margin:0 auto;
+    padding:28px 0 56px;
+  }
+
+  .hero{
+    display:grid;
+    grid-template-columns:1.4fr .8fr;
+    gap:20px;
+    align-items:stretch;
+    margin-bottom:22px;
+  }
+
+  .hero-card,.status-card,.panel,.stage{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(12px);
+  }
+
+  .hero-card{
+    padding:28px;
+    border-radius:26px;
+  }
+
+  .eyebrow{
+    color:var(--accent-2);
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    font-size:.78rem;
+  }
+
+  h1{
+    margin:.45rem 0 .6rem;
+    font-size:clamp(2rem,5vw,4rem);
+    line-height:1;
+  }
+
+  .hero p{
+    color:var(--muted);
+    margin:0;
+    line-height:1.65;
+    max-width:75ch;
+  }
+
+  .status-card{
+    border-radius:26px;
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    gap:16px;
+  }
+
+  .status-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+  }
+
+  .metric{
+    padding:14px;
+    border-radius:16px;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.06);
+  }
+
+  .metric b{
+    display:block;
+    font-size:1.3rem;
+    margin-top:4px;
+  }
+
+  .controls{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .btn{
+    border:none;
+    border-radius:12px;
+    padding:11px 15px;
+    cursor:pointer;
+    transition:.2s ease;
+    font-weight:700;
+  }
+
+  .btn:hover{transform:translateY(-1px)}
+  .btn.primary{background:var(--accent);color:white}
+  .btn.secondary{background:#22304f;color:#dbe4ff}
+  .btn.ghost{background:transparent;color:#cbd5f5;border:1px solid var(--line)}
+  .btn.danger{background:#402534;color:#ffd9e1}
+
+  .layout{
+    display:grid;
+    grid-template-columns:310px 1fr;
+    gap:20px;
+  }
+
+  .sidebar{
+    position:sticky;
+    top:18px;
+    align-self:start;
+  }
+
+  .panel{
+    border-radius:var(--radius);
+    padding:18px;
+  }
+
+  .panel h3,.stage h2{
+    margin:0 0 10px;
+  }
+
+  .steps{
+    display:grid;
+    gap:10px;
+    margin-top:14px;
+  }
+
+  .step-btn{
+    text-align:left;
+    width:100%;
+    border:1px solid var(--line);
+    background:#111a31;
+    color:#dbe3ff;
+    padding:12px 13px;
+    border-radius:12px;
+    cursor:pointer;
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+
+  .step-btn .num{
+    width:28px;height:28px;border-radius:9px;
+    display:grid;place-items:center;
+    background:#1d2948;color:#aebcff;font-weight:800;
+    flex:0 0 auto;
+  }
+
+  .step-btn.active{
+    border-color:var(--accent);
+    background:linear-gradient(90deg, rgba(124,156,255,.18), rgba(124,156,255,.05));
+  }
+
+  .step-btn.done .num{background:rgba(126,231,135,.15);color:var(--ok)}
+  .legend{
+    margin-top:16px;
+    font-size:.88rem;
+    color:var(--muted);
+    line-height:1.5;
+  }
+
+  .main{
+    display:grid;
+    gap:18px;
+  }
+
+  .stage{
+    border-radius:22px;
+    padding:22px;
+    display:none;
+  }
+  .stage.active{display:block}
+
+  .stage-head{
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+
+  .stage-head p{
+    margin:4px 0 0;
+    color:var(--muted);
+    line-height:1.55;
+  }
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    color:#c9d3f6;
+    background:#111a2d;
+    font-size:.84rem;
+    white-space:nowrap;
+  }
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .card{
+    background:#0f1729;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+  }
+  .card h4{margin:0 0 8px}
+  .card p,.muted{color:var(--muted);line-height:1.55}
+
+  textarea,input,select{
+    width:100%;
+    border:1px solid var(--line);
+    background:#0b1324;
+    color:var(--text);
+    border-radius:12px;
+    padding:12px;
+    outline:none;
+  }
+  textarea:focus,input:focus,select:focus{border-color:var(--accent)}
+  textarea{min-height:150px;resize:vertical}
+
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .chips{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .chip{
+    padding:7px 10px;
+    border-radius:999px;
+    background:#17213a;
+    border:1px solid var(--line);
+    color:#cbd5f5;
+    font-size:.85rem;
+  }
+
+  .doc-list,.chunk-list,.result-list{
+    display:grid;
+    gap:10px;
+    max-height:420px;
+    overflow:auto;
+    padding-right:4px;
+  }
+
+  .doc,.chunk,.result{
+    border:1px solid var(--line);
+    background:#0c1528;
+    border-radius:14px;
+    padding:13px;
+  }
+
+  .doc small,.chunk small,.result small{
+    color:var(--muted);
+  }
+
+  .chunk strong,.result strong{color:#dfe6ff}
+
+  .bar{
+    height:9px;
+    border-radius:999px;
+    background:#1c2744;
+    overflow:hidden;
+    margin-top:8px;
+  }
+  .bar > span{
+    display:block;
+    height:100%;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    border-radius:999px;
+  }
+
+  .vector{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#bcd3ff;
+    font-size:.86rem;
+    word-break:break-word;
+    line-height:1.55;
+  }
+
+  .pipeline{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin:12px 0 2px;
+  }
+  .pipe-box{
+    padding:9px 11px;
+    background:#101a2e;
+    border:1px solid var(--line);
+    border-radius:11px;
+    color:#d9e1ff;
+    font-size:.88rem;
+  }
+  .arrow{color:#7f8baa}
+
+  .callout{
+    border-left:4px solid var(--accent-2);
+    background:rgba(115,226,193,.07);
+    padding:12px 14px;
+    border-radius:10px;
+    color:#d7fff4;
+    margin:12px 0;
+  }
+
+  .warning{
+    border-left-color:var(--warn);
+    background:rgba(255,203,107,.07);
+    color:#ffe8b6;
+  }
+
+  .answer{
+    white-space:pre-wrap;
+    line-height:1.7;
+    color:#eef2ff;
+    background:#0b1324;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    min-height:170px;
+  }
+
+  .prompt-box{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.88rem;
+    white-space:pre-wrap;
+    background:#08101f;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    color:#dbe6ff;
+    max-height:460px;
+    overflow:auto;
+  }
+
+  .footer-note{
+    margin-top:20px;
+    color:var(--muted);
+    font-size:.9rem;
+  }
+
+  @media (max-width: 980px){
+    .hero{grid-template-columns:1fr}
+    .layout{grid-template-columns:1fr}
+    .sidebar{position:static}
+    .grid-2,.grid-3{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <section class="hero">
+    <div class="hero-card">
+      <div class="eyebrow">Interactive Learning Lab</div>
+      <h1>RAG Simulator</h1>
+      <p>
+        Learn Retrieval-Augmented Generation by stepping through ingestion, cleaning, chunking,
+        metadata, embeddings, vector search, hybrid retrieval, reranking, prompt construction,
+        and grounded answer generation.
+      </p>
+      <div class="pipeline">
+        <span class="pipe-box">Documents</span><span class="arrow">→</span>
+        <span class="pipe-box">Chunk</span><span class="arrow">→</span>
+        <span class="pipe-box">Embed</span><span class="arrow">→</span>
+        <span class="pipe-box">Retrieve</span><span class="arrow">→</span>
+        <span class="pipe-box">Rerank</span><span class="arrow">→</span>
+        <span class="pipe-box">Prompt</span><span class="arrow">→</span>
+        <span class="pipe-box">Answer</span>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <div>
+        <div class="eyebrow">Simulation status</div>
+        <div class="status-grid">
+          <div class="metric"><span class="muted">Documents</span><b id="mDocs">0</b></div>
+          <div class="metric"><span class="muted">Chunks</span><b id="mChunks">0</b></div>
+          <div class="metric"><span class="muted">Retrieved</span><b id="mRetrieved">0</b></div>
+          <div class="metric"><span class="muted">Final context</span><b id="mFinal">0</b></div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn primary" onclick="loadDemo()">Load demo</button>
+        <button class="btn secondary" onclick="runAll()">Run full pipeline</button>
+        <button class="btn danger" onclick="resetAll()">Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="panel">
+        <h3>RAG stages</h3>
+        <div class="steps" id="stepNav"></div>
+        <div class="legend">
+          This is an educational simulator. Embeddings and reranking are intentionally simplified
+          so you can see the mechanics without calling external AI services.
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <section class="stage active" data-stage="0">
+        <div class="stage-head">
+          <div>
+            <h2>1. Ingest data</h2>
+            <p>Start with raw knowledge: web text, PDFs, transcripts, code, policies, FAQs, and more.</p>
+          </div>
+          <span class="badge">Offline / Indexing</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Add a document</h4>
+            <label class="muted">Title</label>
+            <input id="docTitle" placeholder="Example: HR Policy" />
+            <div style="height:10px"></div>
+            <label class="muted">Text</label>
+            <textarea id="docText" placeholder="Paste document text here..."></textarea>
+            <div style="height:10px"></div>
+            <div class="row">
+              <button class="btn primary" onclick="addDocument()">Add document</button>
+              <button class="btn ghost" onclick="loadDemo()">Load demo data</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>Current corpus</h4>
+            <div class="doc-list" id="docList"></div>
+          </div>
+        </div>
+
+        <div class="callout">
+          Real RAG systems may use loaders for PDFs, web pages, databases, SharePoint, GitHub, transcripts, and more.
+        </div>
+      </section>
+
+      <section class="stage" data-stage="1">
+        <div class="stage-head">
+          <div>
+            <h2>2. Clean and normalize</h2>
+            <p>Remove noise, normalize whitespace, and prepare text for retrieval.</p>
+          </div>
+          <span class="badge">Offline / Indexing</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Cleaning options</h4>
+            <div class="chips">
+              <span class="chip">Trim whitespace</span>
+              <span class="chip">Collapse blank lines</span>
+              <span class="chip">Normalize punctuation</span>
+              <span class="chip">Remove duplicate spaces</span>
+            </div>
+            <div style="height:14px"></div>
+            <button class="btn primary" onclick="cleanDocuments()">Clean documents</button>
+          </div>
+
+          <div class="card">
+            <h4>Cleaned preview</h4>
+            <div class="doc-list" id="cleanList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="2">
+        <div class="stage-head">
+          <div>
+            <h2>3. Chunk the text</h2>
+            <p>Split large documents into smaller units that can be retrieved independently.</p>
+          </div>
+          <span class="badge">Offline / Indexing</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Chunk settings</h4>
+            <label class="muted">Approx. chunk size (words)</label>
+            <input type="number" id="chunkSize" value="45" min="15" max="150" />
+            <div style="height:10px"></div>
+            <label class="muted">Overlap (words)</label>
+            <input type="number" id="chunkOverlap" value="10" min="0" max="60" />
+            <div style="height:12px"></div>
+            <button class="btn primary" onclick="chunkDocuments()">Create chunks</button>
+
+            <div class="callout warning">
+              Chunking is a design decision. Too large = noisy context. Too small = missing surrounding meaning.
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>Chunks</h4>
+            <div class="chunk-list" id="chunkList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="3">
+        <div class="stage-head">
+          <div>
+            <h2>4. Add metadata</h2>
+            <p>Store source information next to each chunk so retrieval can filter, trace, and cite results.</p>
+          </div>
+          <span class="badge">Offline / Indexing</span>
+        </div>
+
+        <div class="card">
+          <div class="chunk-list" id="metadataList"></div>
+        </div>
+
+        <div class="callout">
+          Typical metadata: document ID, title, page, section, author, department, created date, permissions, tenant, and source URL.
+        </div>
+      </section>
+
+      <section class="stage" data-stage="4">
+        <div class="stage-head">
+          <div>
+            <h2>5. Create embeddings</h2>
+            <p>Transform each chunk into a numeric representation that captures semantic meaning.</p>
+          </div>
+          <span class="badge">Offline / Indexing</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Educational embedding model</h4>
+            <p class="muted">
+              This simulator uses a deterministic hashed word-vector representation, not a real neural embedding model.
+              The goal is to make vector search visible and understandable.
+            </p>
+            <button class="btn primary" onclick="embedChunks()">Generate embeddings</button>
+          </div>
+
+          <div class="card">
+            <h4>Vector index</h4>
+            <div class="chunk-list" id="vectorList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="5">
+        <div class="stage-head">
+          <div>
+            <h2>6. Ask a question</h2>
+            <p>At query time, the user question is embedded and prepared for retrieval.</p>
+          </div>
+          <span class="badge">Online / Query</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>User query</h4>
+            <textarea id="userQuery" placeholder="Example: How many annual leave days do employees get?"></textarea>
+            <div style="height:10px"></div>
+            <button class="btn primary" onclick="embedQuery()">Embed query</button>
+          </div>
+
+          <div class="card">
+            <h4>Query vector</h4>
+            <div id="queryVector" class="vector muted">No query embedded yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="6">
+        <div class="stage-head">
+          <div>
+            <h2>7. Retrieve candidates</h2>
+            <p>Use semantic vector similarity and optional keyword matching to fetch the most relevant chunks.</p>
+          </div>
+          <span class="badge">Online / Query</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Retrieval settings</h4>
+            <label class="muted">Top N candidates</label>
+            <input id="topN" type="number" value="6" min="1" max="20" />
+            <div style="height:10px"></div>
+            <label class="muted">Retrieval mode</label>
+            <select id="retrievalMode">
+              <option value="hybrid">Hybrid: semantic + keyword</option>
+              <option value="vector">Vector only</option>
+              <option value="keyword">Keyword only</option>
+            </select>
+            <div style="height:12px"></div>
+            <button class="btn primary" onclick="retrieve()">Retrieve</button>
+          </div>
+
+          <div class="card">
+            <h4>Top-N candidates</h4>
+            <div class="result-list" id="retrievedList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="7">
+        <div class="stage-head">
+          <div>
+            <h2>8. Rerank</h2>
+            <p>Re-score the candidate chunks using a more precise ranking strategy.</p>
+          </div>
+          <span class="badge">Online / Query</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Reranking</h4>
+            <p class="muted">
+              Production systems may use a cross-encoder reranker, an LLM, or a specialized ranking model.
+              This simulator combines semantic similarity, keyword overlap, and phrase coverage.
+            </p>
+            <label class="muted">Keep top K after reranking</label>
+            <input id="topK" type="number" value="3" min="1" max="10" />
+            <div style="height:12px"></div>
+            <button class="btn primary" onclick="rerank()">Rerank candidates</button>
+          </div>
+
+          <div class="card">
+            <h4>Final context chunks</h4>
+            <div class="result-list" id="rerankedList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="8">
+        <div class="stage-head">
+          <div>
+            <h2>9. Build the prompt</h2>
+            <p>Combine instructions, retrieved context, and the user question into a grounded prompt.</p>
+          </div>
+          <span class="badge">Online / Query</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Prompt strategy</h4>
+            <div class="chips">
+              <span class="chip">System instruction</span>
+              <span class="chip">Retrieved context</span>
+              <span class="chip">User question</span>
+              <span class="chip">Citation requirement</span>
+              <span class="chip">Fallback if unknown</span>
+            </div>
+            <div style="height:12px"></div>
+            <button class="btn primary" onclick="buildPrompt()">Build prompt</button>
+          </div>
+          <div class="card">
+            <h4>Constructed prompt</h4>
+            <div id="promptBox" class="prompt-box">No prompt built yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="9">
+        <div class="stage-head">
+          <div>
+            <h2>10. Generate a grounded answer</h2>
+            <p>The LLM uses the retrieved context to answer, ideally staying faithful to the sources.</p>
+          </div>
+          <span class="badge">Online / Query</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h4>Generation</h4>
+            <p class="muted">
+              This simulator does not call a real LLM. It composes a simple extractive answer from the highest-ranked context
+              so you can see how grounding works.
+            </p>
+            <button class="btn primary" onclick="generateAnswer()">Generate answer</button>
+          </div>
+
+          <div class="card">
+            <h4>Grounded response</h4>
+            <div id="answerBox" class="answer">No answer generated yet.</div>
+          </div>
+        </div>
+
+        <div class="callout">
+          Important: RAG does not usually train the LLM on your documents. It retrieves relevant information at query time and places it into the model's context.
+        </div>
+      </section>
+
+      <section class="stage" data-stage="10">
+        <div class="stage-head">
+          <div>
+            <h2>11. Production considerations</h2>
+            <p>Real-world RAG systems add quality, security, cost, and reliability layers around the basic pipeline.</p>
+          </div>
+          <span class="badge">Beyond the basics</span>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <h4>Retrieval quality</h4>
+            <p>Chunking, hybrid search, metadata filters, query rewriting, reranking, and evaluation.</p>
+          </div>
+          <div class="card">
+            <h4>Security</h4>
+            <p>Document-level permissions, tenant isolation, secret management, PII controls, and auditability.</p>
+          </div>
+          <div class="card">
+            <h4>Observability</h4>
+            <p>Track retrieval hits, latency, token usage, answer quality, failed queries, and citation accuracy.</p>
+          </div>
+          <div class="card">
+            <h4>Freshness</h4>
+            <p>Re-index changed documents, delete stale chunks, and manage source-of-truth updates.</p>
+          </div>
+          <div class="card">
+            <h4>Evaluation</h4>
+            <p>Measure retrieval precision/recall, groundedness, answer correctness, and hallucination rate.</p>
+          </div>
+          <div class="card">
+            <h4>Cost & latency</h4>
+            <p>Balance embedding cost, index size, top-N, reranker cost, prompt length, and model choice.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="footer-note">
+    Built as a single-file HTML/CSS/JavaScript learning simulator. No backend and no external libraries required.
+  </div>
+</div>
+
+<script>
+const stages = [
+  "Ingest data",
+  "Clean & normalize",
+  "Chunk",
+  "Metadata",
+  "Embeddings",
+  "User query",
+  "Retrieve",
+  "Rerank",
+  "Build prompt",
+  "Generate answer",
+  "Production notes"
+];
+
+let state = {
+  docs: [],
+  cleaned: [],
+  chunks: [],
+  embedded: [],
+  query: "",
+  queryVector: [],
+  retrieved: [],
+  reranked: [],
+  prompt: ""
+};
+
+function init(){
+  const nav = document.getElementById("stepNav");
+  nav.innerHTML = stages.map((s,i)=>`
+    <button class="step-btn ${i===0?'active':''}" onclick="goStage(${i})">
+      <span class="num">${i+1}</span>
+      <span>${s}</span>
+    </button>
+  `).join("");
+  render();
+}
+init();
+
+function goStage(i){
+  document.querySelectorAll(".stage").forEach((el,idx)=>el.classList.toggle("active", idx===i));
+  document.querySelectorAll(".step-btn").forEach((el,idx)=>el.classList.toggle("active", idx===i));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function markDone(i){
+  const btns = document.querySelectorAll(".step-btn");
+  if(btns[i]) btns[i].classList.add("done");
+}
+
+function cleanText(t){
+  return t
+    .replace(/\r/g,"")
+    .replace(/[ \t]+/g," ")
+    .replace(/\n{3,}/g,"\n\n")
+    .replace(/\s+([,.;!?])/g,"$1")
+    .trim();
+}
+
+function addDocument(){
+  const title = document.getElementById("docTitle").value.trim() || `Document ${state.docs.length+1}`;
+  const text = document.getElementById("docText").value.trim();
+  if(!text){ alert("Paste some text first."); return; }
+  state.docs.push({id:cryptoRandom(),title,text});
+  document.getElementById("docTitle").value="";
+  document.getElementById("docText").value="";
+  markDone(0);
+  render();
+}
+
+function loadDemo(){
+  state.docs = [
+    {
+      id:"hr-policy",
+      title:"HR Policy — Annual Leave",
+      text:`Employees receive 20 days of annual leave per calendar year. Annual leave is sometimes referred to as vacation leave. Employees should request leave through the HR portal. Unused annual leave may be carried forward up to a maximum of 5 days, subject to manager approval.`
+    },
+    {
+      id:"remote-work",
+      title:"Remote Work Policy",
+      text:`Employees may work remotely up to three days per week with manager approval. All company devices must use multi-factor authentication and approved endpoint protection. Confidential customer data must not be stored on personal devices.`
+    },
+    {
+      id:"expense-policy",
+      title:"Travel and Expense Policy",
+      text:`Employees may claim reasonable business travel expenses. Receipts are required for expenses above 25 dollars. Expense reports should be submitted within 30 days of travel. Manager approval is required before reimbursement.`
+    },
+    {
+      id:"it-faq",
+      title:"IT Support FAQ",
+      text:`For password reset issues, use the self-service password reset portal. If error code ZX-4917 appears during VPN sign-in, verify that the device clock is synchronized and then reconnect. Contact the service desk if the error continues.`
+    }
+  ];
+  document.getElementById("userQuery").value = "How many vacation days do employees get?";
+  markDone(0);
+  render();
+}
+
+function cleanDocuments(){
+  if(!state.docs.length){ alert("Add or load documents first."); return; }
+  state.cleaned = state.docs.map(d=>({...d,text:cleanText(d.text)}));
+  markDone(1);
+  render();
+}
+
+function chunkDocuments(){
+  if(!state.cleaned.length) cleanDocuments();
+  const size = Math.max(10, Number(document.getElementById("chunkSize").value)||45);
+  const overlap = Math.max(0, Math.min(size-1, Number(document.getElementById("chunkOverlap").value)||10));
+  const chunks = [];
+  state.cleaned.forEach(doc=>{
+    const words = doc.text.split(/\s+/);
+    let start=0, idx=0;
+    while(start < words.length){
+      const end = Math.min(words.length, start+size);
+      const text = words.slice(start,end).join(" ");
+      chunks.push({
+        id:`${doc.id}-chunk-${idx+1}`,
+        docId:doc.id,
+        title:doc.title,
+        chunkIndex:idx+1,
+        text,
+        metadata:{
+          source:doc.title,
+          document_id:doc.id,
+          chunk_index:idx+1,
+          word_start:start+1,
+          word_end:end
+        }
+      });
+      if(end===words.length) break;
+      start = end-overlap;
+      idx++;
+    }
+  });
+  state.chunks = chunks;
+  markDone(2); markDone(3);
+  render();
+}
+
+function tokenize(text){
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g," ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function hashToken(token, dims=16){
+  let h=2166136261;
+  for(let i=0;i<token.length;i++){
+    h ^= token.charCodeAt(i);
+    h = Math.imul(h,16777619);
+  }
+  const vec = Array(dims).fill(0);
+  for(let i=0;i<dims;i++){
+    let x = (h ^ Math.imul(i+1, 2654435761)) >>> 0;
+    vec[i] = ((x % 2000)/1000)-1;
+  }
+  return vec;
+}
+
+function embedText(text, dims=16){
+  const tokens = tokenize(text);
+  if(!tokens.length) return Array(dims).fill(0);
+  const v = Array(dims).fill(0);
+  tokens.forEach(tok=>{
+    const tv = hashToken(tok,dims);
+    for(let i=0;i<dims;i++) v[i]+=tv[i];
+  });
+  const norm = Math.sqrt(v.reduce((s,x)=>s+x*x,0)) || 1;
+  return v.map(x=>x/norm);
+}
+
+function cosine(a,b){
+  let dot=0,na=0,nb=0;
+  const n=Math.min(a.length,b.length);
+  for(let i=0;i<n;i++){
+    dot+=a[i]*b[i]; na+=a[i]*a[i]; nb+=b[i]*b[i];
+  }
+  return dot/((Math.sqrt(na)*Math.sqrt(nb))||1);
+}
+
+function embedChunks(){
+  if(!state.chunks.length) chunkDocuments();
+  state.embedded = state.chunks.map(c=>({...c,vector:embedText(c.text)}));
+  markDone(4);
+  render();
+}
+
+function embedQuery(){
+  const q = document.getElementById("userQuery").value.trim();
+  if(!q){ alert("Enter a question first."); return; }
+  state.query = q;
+  state.queryVector = embedText(q);
+  markDone(5);
+  render();
+}
+
+function keywordScore(query,text){
+  const q = [...new Set(tokenize(query).filter(w=>w.length>2))];
+  if(!q.length) return 0;
+  const t = tokenize(text);
+  const set = new Set(t);
+  const hits = q.filter(w=>set.has(w)).length;
+  return hits/q.length;
+}
+
+function phraseCoverage(query,text){
+  const q = tokenize(query).filter(w=>w.length>3);
+  if(!q.length) return 0;
+  const lower=text.toLowerCase();
+  let hits=0;
+  q.forEach(w=>{ if(lower.includes(w)) hits++; });
+  return hits/q.length;
+}
+
+function retrieve(){
+  if(!state.embedded.length) embedChunks();
+  if(!state.queryVector.length) embedQuery();
+  const topN = Math.max(1, Number(document.getElementById("topN").value)||6);
+  const mode = document.getElementById("retrievalMode").value;
+  state.retrieved = state.embedded.map(c=>{
+    const v = cosine(state.queryVector,c.vector);
+    const k = keywordScore(state.query,c.text);
+    let score = mode==="vector" ? v : mode==="keyword" ? k : (0.7*v + 0.3*k);
+    return {...c,vectorScore:v,keywordScore:k,retrievalScore:score};
+  }).sort((a,b)=>b.retrievalScore-a.retrievalScore).slice(0,topN);
+  markDone(6);
+  render();
+}
+
+function rerank(){
+  if(!state.retrieved.length) retrieve();
+  const topK = Math.max(1, Number(document.getElementById("topK").value)||3);
+  state.reranked = state.retrieved.map(c=>{
+    const phrase = phraseCoverage(state.query,c.text);
+    const score = 0.5*c.vectorScore + 0.25*c.keywordScore + 0.25*phrase;
+    return {...c,phraseScore:phrase,rerankScore:score};
+  }).sort((a,b)=>b.rerankScore-a.rerankScore).slice(0,topK);
+  markDone(7);
+  render();
+}
+
+function buildPrompt(){
+  if(!state.reranked.length) rerank();
+  const context = state.reranked.map((c,i)=>
+`[Source ${i+1}: ${c.title}, chunk ${c.chunkIndex}]
+${c.text}`
+  ).join("\n\n");
+  state.prompt =
+`SYSTEM:
+Answer the user's question using only the supplied context.
+If the answer is not supported by the context, say you do not know.
+Cite the source title for factual claims.
+
+CONTEXT:
+${context}
+
+USER:
+${state.query}
+
+ASSISTANT:`;
+  markDone(8);
+  render();
+}
+
+function generateAnswer(){
+  if(!state.prompt) buildPrompt();
+  if(!state.reranked.length){ alert("No context available."); return; }
+  const best = state.reranked[0];
+  const sentences = best.text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [best.text];
+  const qWords = new Set(tokenize(state.query).filter(w=>w.length>3));
+  const ranked = sentences.map(s=>{
+    const words = tokenize(s);
+    const overlap = words.filter(w=>qWords.has(w)).length;
+    return {s:s.trim(),score:overlap};
+  }).sort((a,b)=>b.score-a.score);
+  const chosen = ranked.slice(0,2).map(x=>x.s).join(" ");
+  const answer = chosen
+    ? `${chosen}\n\nSource: ${best.title}`
+    : `I found relevant context in "${best.title}", but this simulator could not compose a confident extractive answer.`;
+  document.getElementById("answerBox").textContent = answer;
+  markDone(9);
+}
+
+function runAll(){
+  if(!state.docs.length) loadDemo();
+  cleanDocuments();
+  chunkDocuments();
+  embedChunks();
+  if(!document.getElementById("userQuery").value.trim())
+    document.getElementById("userQuery").value="How many vacation days do employees get?";
+  embedQuery();
+  retrieve();
+  rerank();
+  buildPrompt();
+  generateAnswer();
+  goStage(9);
+}
+
+function resetAll(){
+  state={docs:[],cleaned:[],chunks:[],embedded:[],query:"",queryVector:[],retrieved:[],reranked:[],prompt:""};
+  document.getElementById("docTitle").value="";
+  document.getElementById("docText").value="";
+  document.getElementById("userQuery").value="";
+  document.getElementById("answerBox").textContent="No answer generated yet.";
+  document.querySelectorAll(".step-btn").forEach((b,i)=>{b.classList.remove("done"); b.classList.toggle("active",i===0);});
+  goStage(0);
+  render();
+}
+
+function cryptoRandom(){
+  return "doc-"+Math.random().toString(36).slice(2,9);
+}
+
+function pct(x){
+  return Math.max(0,Math.min(100,Math.round((x+1)/2*100)));
+}
+
+function fmtVec(v){
+  return "["+v.map(x=>x.toFixed(3)).join(", ")+"]";
+}
+
+function render(){
+  document.getElementById("mDocs").textContent=state.docs.length;
+  document.getElementById("mChunks").textContent=state.chunks.length;
+  document.getElementById("mRetrieved").textContent=state.retrieved.length;
+  document.getElementById("mFinal").textContent=state.reranked.length;
+
+  const docList=document.getElementById("docList");
+  docList.innerHTML = state.docs.length ? state.docs.map(d=>`
+    <div class="doc"><strong>${escapeHtml(d.title)}</strong><br><small>${d.text.split(/\s+/).length} words</small></div>
+  `).join("") : `<div class="muted">No documents yet.</div>`;
+
+  const cleanList=document.getElementById("cleanList");
+  cleanList.innerHTML = state.cleaned.length ? state.cleaned.map(d=>`
+    <div class="doc"><strong>${escapeHtml(d.title)}</strong><p class="muted">${escapeHtml(d.text.slice(0,220))}${d.text.length>220?"…":""}</p></div>
+  `).join("") : `<div class="muted">Run cleaning to see normalized text.</div>`;
+
+  const chunkList=document.getElementById("chunkList");
+  chunkList.innerHTML = state.chunks.length ? state.chunks.map(c=>`
+    <div class="chunk">
+      <strong>${escapeHtml(c.title)} — chunk ${c.chunkIndex}</strong>
+      <p>${escapeHtml(c.text)}</p>
+    </div>
+  `).join("") : `<div class="muted">No chunks yet.</div>`;
+
+  const metadataList=document.getElementById("metadataList");
+  metadataList.innerHTML = state.chunks.length ? state.chunks.map(c=>`
+    <div class="chunk">
+      <strong>${escapeHtml(c.id)}</strong>
+      <div class="vector">${escapeHtml(JSON.stringify(c.metadata,null,2))}</div>
+    </div>
+  `).join("") : `<div class="muted">Create chunks first.</div>`;
+
+  const vectorList=document.getElementById("vectorList");
+  vectorList.innerHTML = state.embedded.length ? state.embedded.map(c=>`
+    <div class="chunk">
+      <strong>${escapeHtml(c.id)}</strong>
+      <div class="vector">${fmtVec(c.vector)}</div>
+    </div>
+  `).join("") : `<div class="muted">Generate embeddings to populate the vector index.</div>`;
+
+  document.getElementById("queryVector").textContent =
+    state.queryVector.length ? fmtVec(state.queryVector) : "No query embedded yet.";
+
+  const retrievedList=document.getElementById("retrievedList");
+  retrievedList.innerHTML = state.retrieved.length ? state.retrieved.map((c,i)=>`
+    <div class="result">
+      <strong>#${i+1} ${escapeHtml(c.title)} — chunk ${c.chunkIndex}</strong>
+      <small>retrieval score ${c.retrievalScore.toFixed(3)} · vector ${c.vectorScore.toFixed(3)} · keyword ${c.keywordScore.toFixed(3)}</small>
+      <div class="bar"><span style="width:${pct(c.retrievalScore)}%"></span></div>
+      <p>${escapeHtml(c.text)}</p>
+    </div>
+  `).join("") : `<div class="muted">No retrieval results yet.</div>`;
+
+  const rerankedList=document.getElementById("rerankedList");
+  rerankedList.innerHTML = state.reranked.length ? state.reranked.map((c,i)=>`
+    <div class="result">
+      <strong>#${i+1} ${escapeHtml(c.title)} — chunk ${c.chunkIndex}</strong>
+      <small>rerank score ${c.rerankScore.toFixed(3)} · phrase coverage ${c.phraseScore.toFixed(3)}</small>
+      <div class="bar"><span style="width:${pct(c.rerankScore)}%"></span></div>
+      <p>${escapeHtml(c.text)}</p>
+    </div>
+  `).join("") : `<div class="muted">No reranked context yet.</div>`;
+
+  document.getElementById("promptBox").textContent = state.prompt || "No prompt built yet.";
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+</script>
+</body>
+</html>
