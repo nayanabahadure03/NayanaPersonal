@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Product Knowledge Copilot · Simulator</title>
+<!--
+Save as index.html. No dependencies, API keys, or network requests.
+
+This previews the complete product workflow. It does not execute or certify
+the specification's 15 production build steps.
+
+A static page cannot provide backend authorisation, production RAG, or /health.
+
+Validation: JavaScript syntax, 16 isolated checks and DOM interaction flows
+passed. Real-browser layout/E2E verification was unavailable in this session.
+-->
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f5f7f6;
+  --paper: #fff;
+  --ink: #182f2d;
+  --muted: #566966;
+  --line: #dce5e1;
+  --brand: #126b5d;
+  --soft: #e7f4ee;
+  --bad: #9b322e;
+  --warn: #805b12;
+  --shadow: 0 8px 28px #163e2c08;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+button,input,select,textarea { font: inherit; }
+button,a,input,select,textarea { touch-action: manipulation; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+button,a,input,select,textarea,summary { outline-offset: 4px; }
+:focus-visible { outline: 3px solid #b96a1b; }
+button {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-weight: 600;
+}
+button:hover:not(:disabled) {
+  background: var(--soft);
+  border-color: #a5c4b7;
+}
+.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: white;
+}
+.primary:hover:not(:disabled) {
+  background: #0b5247;
+  color: white;
+}
+.danger { color: var(--bad); border-color: #dfb8b4; }
+.small { font-size: 13px; }
+.muted { color: var(--muted); }
+a { color: var(--brand); }
+h1,h2,h3,p { margin: 0 0 12px; }
+h1 {
+  font-size: clamp(25px,3vw,35px);
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+h2 { font-size: 20px; line-height: 1.35; }
+h3 { font-size: 16px; }
+label { display: block; font-weight: 600; font-size: 13px; }
+input,select,textarea {
+  width: 100%;
+  border: 1px solid #bbcfc5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  margin-top: 5px;
+  font-size: 15px;
+  min-width: 0;
+}
+textarea { resize: vertical; min-height: 100px; }
+input[type=checkbox] { width: auto; margin: 0 7px 0 0; }
+input[type=file] { padding: 18px; border-style: dashed; }
+summary { cursor: pointer; font-weight: 600; }
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 13px/1.6 ui-monospace,monospace;
+  background: #f1f5f3;
+  padding: 16px;
+  border-radius: 8px;
+}
+blockquote {
+  margin: 12px 0;
+  padding: 12px 17px;
+  border-left: 3px solid #91b7a6;
+  background: #f6faf7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+hr { border: 0; border-top: 1px solid var(--line); margin: 20px 0; }
+[hidden] { display: none !important; }
+.skip {
+  position: absolute;
+  top: -70px;
+  left: 16px;
+  z-index: 100;
+  background: white;
+  padding: 12px;
+}
+.skip:focus { top: 8px; }
+.app {
+  display: grid;
+  grid-template-columns: 248px minmax(0,1fr);
+  min-height: 100vh;
+}
+aside {
+  padding: 30px 20px;
+  background: #fff;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+.logo {
+  background: var(--brand);
+  color: white;
+  padding: 11px;
+  border-radius: 12px;
+  font-size: 17px;
+  letter-spacing: -1px;
+}
+.brand small {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 6px;
+}
+nav { display: flex; flex-direction: column; gap: 5px; }
+nav button {
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+  padding: 11px 12px;
+  font-weight: 500;
+}
+nav button[aria-current=page] {
+  background: var(--soft);
+  color: #075648;
+  font-weight: 700;
+}
+.side-note {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 17px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  align-items: center;
+  padding: 17px 32px;
+  border-bottom: 1px solid var(--line);
+  background: #ffffffa8;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  display: inline-block;
+  margin-right: 7px;
+}
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 9px;
+  background: var(--soft);
+  border-radius: 7px;
+  color: #155a46;
+}
+.badge.warn { background: #fff2d7; color: var(--warn); }
+.badge.bad { background: #fdebea; color: var(--bad); }
+.content {
+  max-width: 1130px;
+  margin: auto;
+  padding: 36px 36px 80px;
+  min-width: 0;
+}
+.eyebrow {
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+  margin-bottom: 11px;
+}
+.heading { margin-bottom: 25px; }
+.heading p { max-width: 730px; color: var(--muted); }
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 17px;
+}
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.notice {
+  padding: 13px 16px;
+  border-radius: 10px;
+  background: #edf4f0;
+  color: #37544a;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+.notice.warn { background: #fff4df; color: #714e0d; }
+.notice.bad { background: #fff0ef; color: #942a27; }
+.empty { text-align: center; padding: 36px 16px; }
+.empty .mark { font-size: 27px; color: var(--brand); margin-bottom: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+.chips button { font-size: 13px; font-weight: 500; border-radius: 20px; }
+.source { border-top: 1px solid var(--line); padding: 17px 0; }
+.source:last-child { padding-bottom: 0; }
+.source h3 { margin-bottom: 5px; }
+.source p { margin-bottom: 8px; }
+.cite {
+  border: 0;
+  background: var(--soft);
+  color: var(--brand);
+  font-size: 12px;
+  padding: 5px 9px;
+  margin: 6px 0;
+  text-align: left;
+}
+.tablewrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th,td {
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  padding: 12px 10px;
+  vertical-align: top;
+}
+th { font-weight: 650; color: var(--muted); }
+td { overflow-wrap: anywhere; }
+td:first-child { min-width: 180px; }
+.flow {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+.flow div {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 12px;
+  font-size: 12px;
+  background: #fafcfb;
+}
+.flow strong { display: block; font-size: 13px; }
+.flow .done { background: var(--soft); border-color: #b1d3c2; }
+.flow .now { border-color: var(--brand); background: #f1faf5; }
+.step-list {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 9px;
+}
+.step-list button { text-align: left; font-size: 13px; }
+.step-list button.active { border-color: var(--brand); background: var(--soft); }
+.check {
+  display: flex;
+  align-items: flex-start;
+  font-size: 14px;
+  font-weight: 400;
+}
+.check input { margin-top: 5px; }
+#toast {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  max-width: min(440px,calc(100vw - 36px));
+  background: #193d32;
+  color: white;
+  padding: 13px 19px;
+  border-radius: 12px;
+  box-shadow: 0 5px 30px #0002;
+  z-index: 30;
+}
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  padding: 0;
+  width: min(720px,calc(100vw - 28px));
+  max-height: 88vh;
+  color: var(--ink);
+  box-shadow: 0 24px 80px #0003;
+}
+dialog::backdrop { background: #12382d70; }
+dialog .dialogbody { padding: 27px; overflow-wrap: anywhere; }
+.dialoghead {
+  position: sticky;
+  top: 0;
+  background: white;
+  padding: 17px 23px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.dialoghead h2 { margin: 0; }
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+.pending { border-left: 3px solid var(--brand); padding-left: 13px; }
+.toolbar { margin-bottom: 18px; }
+.toolbar input { flex: 1; min-width: 150px; }
+.toolbar select { width: auto; max-width: 100%; }
+.status-text {
+  min-height: 22px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.progress { width: 100%; accent-color: var(--brand); height: 10px; }
+.foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.help-list li { margin: 8px 0; }
+.answer-section { margin-top: 24px; }
+.answer-section h3 { font-size: 14px; color: var(--brand); }
+
+@media(max-width:1000px) {
+  .app { grid-template-columns: 205px minmax(0,1fr); }
+  aside { padding: 24px 12px; }
+  .content { padding: 28px 22px; }
+  .top { padding: 16px 22px; }
+  .filters,.step-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .flow { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:720px) {
+  .app { display: block; }
+  aside {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 16px;
+    gap: 14px;
+  }
+  .brand br { display: none; }
+  nav { flex-direction: row; overflow-x: auto; }
+  nav button { white-space: nowrap; flex-shrink: 0; }
+  .side-note { display: none; }
+  .rolebox { max-width: 100%; }
+  .top { padding: 12px 16px; }
+  .content { padding: 24px 16px 70px; }
+  .card { padding: 19px; }
+  .grid,.filters,.step-list { grid-template-columns: 1fr; }
+  .heading { margin-bottom: 20px; }
+  .top .muted { font-size: 12px; }
+  h1 { font-size: 28px; }
+  button { min-height: 42px; }
+  input,textarea,select { font-size: 16px; }
+  .flow { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media(prefers-reduced-motion:reduce) {
+  * { scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip">Skip to content</a>
+
+<div class="app">
+  <aside>
+    <div class="brand">
+      <span class="logo" aria-hidden="true">PK</span>
+      <div>
+        Product Knowledge<br> Copilot
+        <small>Interactive simulator</small>
+      </div>
+    </div>
+
+    <nav id="nav" aria-label="Main navigation"></nav>
+
+    <div class="rolebox">
+      <label for="role">Development role preview</label>
+      <select id="role">
+        <option value="consumer">Consumer</option>
+        <option value="admin">Uploader / Admin</option>
+        <option value="evaluator">Evaluator / Approver</option>
+        <option value="ops">Observability / RAG Operations</option>
+      </select>
+      <p class="small muted" style="margin-top:8px">
+        Preview only. No real login or security boundary.
+      </p>
+    </div>
+
+    <div class="side-note">
+      Ask → Answer → Evidence → Context
+      <br><br>
+      Self-contained demo. Nothing is sent to a server.
+      Use non-sensitive test documents.
+    </div>
+  </aside>
+
+  <div>
+    <header class="top">
+      <span>
+        <span class="dot" aria-hidden="true"></span>
+        <strong class="small">Local simulation</strong>
+      </span>
+      <div class="row">
+        <span id="storageLabel" class="small muted">This browser tab</span>
+        <button data-action="help" class="small">How it works</button>
+      </div>
+    </header>
+
+    <main id="main" class="content" tabindex="-1"></main>
+  </div>
+</div>
+
+<dialog id="dialog" aria-labelledby="dialogTitle">
+  <div class="dialoghead">
+    <h2 id="dialogTitle"></h2>
+    <button data-action="close" aria-label="Close dialog">Close</button>
+  </div>
+  <div id="dialogBody" class="dialogbody"></div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<div id="live" class="sr" aria-live="polite"></div>
+
+<noscript>
+  <p>This simulator needs JavaScript enabled in your browser.</p>
+</noscript>
+
+<script>
+"use strict";
+
+const $ = s => document.querySelector(s);
+
+const esc = value => String(value ?? "").replace(
+  /[&<>"']/g,
+  character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[character])
+);
+
+const KEY = "pkc-simulator-v1";
+const VERSION = 1;
+const MAX_FILE = 1024 * 1024;
+
+const uid = () =>
+  globalThis.crypto?.randomUUID?.() ||
+  "id-" + Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+const wait = milliseconds =>
+  new Promise(resolve => setTimeout(resolve, milliseconds));
+
+const now = () => new Date().toISOString();
+
+const initial = () => ({
+  version: VERSION,
+  docs: [],
+  history: [],
+  audit: [],
+  demo: false
+});
+
+let state = initial();
+let stored = true;
+let role = "consumer";
+let page = "ask";
+let busy = false;
+let active = null;
+let draft = "";
+let filter = {};
+let failure = "none";
+let step = 0;
+let pageNo = 1;
+let listQuery = "";
+let listState = "";
+let traceQuery = "";
+let tests = [];
+let ingest = null;
+let lastFocus = null;
+
+try {
+  const saved = JSON.parse(sessionStorage.getItem(KEY) || "null");
+
+  if (
+    saved &&
+    saved.version === VERSION &&
+    Array.isArray(saved.docs) &&
+    Array.isArray(saved.history) &&
+    Array.isArray(saved.audit)
+  ) {
+    state = saved;
+  }
+} catch {
+  stored = false;
+}
+
+for (const document of state.docs) {
+  if (document.deletion === "deleting") {
+    document.deletion = "deletion_failed";
+  }
+
+  if (document.status === "processing") {
+    document.status = "processing_failed";
+    document.error = "Processing was interrupted. Retry ingestion.";
+  }
+}
+
+function save() {
+  try {
+    sessionStorage.setItem(KEY, JSON.stringify(state));
+    stored = true;
+  } catch {
+    stored = false;
+  }
+
+  $("#storageLabel").textContent = stored
+    ? "Saved in this browser tab"
+    : "Temporary memory only · refresh clears data";
+}
+
+function toast(message) {
+  $("#toast").textContent = message;
+  $("#toast").hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => $("#toast").hidden = true, 5500);
+}
+
+function announce(message) {
+  $("#live").textContent = message;
+}
+
+function modal(title, html) {
+  lastFocus = document.activeElement;
+  $("#dialogTitle").textContent = title;
+  $("#dialogBody").innerHTML = html;
+
+  if (!$("#dialog").open) {
+    $("#dialog").showModal();
+  }
+}
+
+$("#dialog").addEventListener("close", () => {
+  if (lastFocus?.isConnected) {
+    lastFocus.focus();
+  }
+});
+
+const metaFields = [
+  ["product", "Product"],
+  ["feature", "Feature / Area"],
+  ["client", "Client"],
+  ["jurisdiction", "Jurisdiction / Region"],
+  ["version", "Version / Release"],
+  ["type", "Document type"]
+];
+
+const types = [
+  "Design / Requirement Document",
+  "Release Notes",
+  "Product Knowledge",
+  "Standard / Regulatory Knowledge",
+  "Accounting Knowledge"
+];
+
+const labels = {
+  approved: "Approved",
+  awaiting_evaluation: "Awaiting evaluation",
+  uploaded: "Uploaded",
+  processing: "Processing",
+  processing_failed: "Processing failed",
+  evaluation_failed: "Evaluation failed",
+  rejected: "Rejected",
+  superseded: "Superseded",
+  active: "Active",
+  deleting: "Deleting",
+  deletion_failed: "Cleanup failed",
+  deleted: "Deleted",
+  answered: "Source passages found",
+  clarification_required: "Clarification needed",
+  insufficient_information: "Insufficient information",
+  conflicting_sources: "Conflicting sources",
+  generation_failed: "Generation failed",
+  citation_validation_failed: "Citation validation failed",
+  retrieval_failed: "Retrieval failed"
+};
+
+function tag(value) {
+  const appearance = /failed|rejected|conflict/.test(value)
+    ? "bad"
+    : /awaiting|processing|deleting|clarification/.test(value)
+      ? "warn"
+      : "";
+
+  return `<span class="badge ${appearance}">${esc(labels[value] || value)}</span>`;
+}
+
+const getDoc = id => state.docs.find(document => document.id === id);
+
+const eligible = document =>
+  !!document &&
+  document.deletion === "active" &&
+  document.status === "approved" &&
+  document.indexed;
+
+const can = permission =>
+  permission === "consumer" || role === permission;
+
+function guard(permission) {
+  if (can(permission)) return true;
+
+  toast(
+    "Access denied in this role preview. Switch to the appropriate role."
+  );
+
+  return false;
+}
+
+function status(document) {
+  return document.deletion !== "active"
+    ? document.deletion
+    : document.status;
+}
+
+function facts(document) {
+  return [
+    document.type,
+    document.product,
+    document.feature,
+    document.version,
+    document.client,
+    document.jurisdiction,
+    document.applicability !== "unknown"
+      ? document.applicability
+      : null
+  ].filter(Boolean).map(esc).join(" · ");
+}
+
+const navs = [
+  ["ask", "Ask / Search", "consumer"],
+  ["history", "Conversation History", "consumer"],
+  ["sources", "Sources", "consumer"],
+  ["upload", "Upload Documents", "admin"],
+  ["manage", "Manage RAG Documents", "admin"],
+  ["evaluation", "Evaluation", "evaluator"],
+  ["observability", "Observability", "ops"],
+  ["guide", "Simulator guide", "consumer"]
+];
+
+function route(nextPage) {
+  if (busy) {
+    toast("Please wait for the current operation to finish.");
+    return;
+  }
+
+  page = nextPage;
+  pageNo = 1;
+  listQuery = "";
+  listState = "";
+
+  if (location.hash !== "#" + nextPage) {
+    location.hash = nextPage;
+  } else {
+    render();
+  }
+}
+
+function render() {
+  const selected = navs.find(item => item[0] === page);
+
+  $("#nav").innerHTML = navs
+    .filter(item => can(item[2]))
+    .map(item => `
+      <button
+        data-page="${item[0]}"
+        ${page === item[0] ? 'aria-current="page"' : ""}
+      >${item[1]}</button>
+    `).join("");
+
+  if (!selected) {
+    $("#main").innerHTML = heading(
+      "Page not found",
+      "Choose a page from the navigation."
+    );
+    return;
+  }
+
+  if (!can(selected[2])) {
+    $("#main").innerHTML = heading(
+      "Access denied",
+      "This page is unavailable for the selected preview role."
+    ) + `
+      <div class="notice warn">
+        A production backend must enforce this as HTTP 403.
+        This static simulator only demonstrates the interface.
+      </div>
+    `;
+    return;
+  }
+
+  ({
+    ask: renderAsk,
+    history: renderHistory,
+    sources: renderSources,
+    upload: renderUpload,
+    manage: renderManage,
+    evaluation: renderEvaluation,
+    observability: renderObservability,
+    guide: renderGuide
+  })[page]();
+}
+
+function heading(title, subtitle) {
+  return `
+    <div class="heading">
+      <div class="eyebrow">Product Knowledge Copilot</div>
+      <h1>${title}</h1>
+      <p style="margin-top:13px">${subtitle}</p>
+    </div>
+  `;
+}
+
+function empty(title, subtitle, action = "") {
+  return `
+    <div class="card empty">
+      <div class="mark" aria-hidden="true">◇</div>
+      <h2>${title}</h2>
+      <p class="muted">${subtitle}</p>
+      ${action}
+    </div>
+  `;
+}
+
+function sampleButton() {
+  return `
+    <button
+      class="primary"
+      data-action="demo"
+      ${state.demo ? "disabled" : ""}
+    >
+      ${state.demo
+        ? "Fictional examples loaded"
+        : "Load fictional examples"}
+    </button>
+  `;
+}
+
+function filtersHTML() {
+  return metaFields.map(([key, label]) => {
+    const values = [
+      ...new Set(
+        state.docs
+          .filter(eligible)
+          .map(document => document[key])
+          .filter(Boolean)
+      )
+    ].sort();
+
+    return `
+      <label>
+        ${label}
+        <select data-filter="${key}">
+          <option value="">All</option>
+          ${values.map(value => `
+            <option
+              ${filter[key] === value ? "selected" : ""}
+              value="${esc(value)}"
+            >${esc(value)}</option>
+          `).join("")}
+        </select>
+      </label>
+    `;
+  }).join("");
+}
+
+function renderAsk() {
+  const available = state.docs.filter(eligible).length;
+
+  $("#main").innerHTML =
+    heading(
+      "Find the knowledge behind your next decision.",
+      "Explore feature behaviour, related functionality and historical information from approved sources."
+    ) +
+    `
+      <div class="notice">
+        <strong>Simulator:</strong>
+        answers quote matching source passages. No AI model is connected.
+        ${state.demo
+          ? "The example documents are fictional and are not product facts."
+          : "Start with your own test text or load clearly labelled fictional examples."}
+      </div>
+    ` +
+    (
+      !state.docs.length
+        ? empty(
+            "Your knowledge space is empty",
+            "Load examples to explore, or select Uploader / Admin to add a test document.",
+            sampleButton()
+          )
+        : !available
+          ? `
+            <div class="notice warn">
+              No approved sources are available.
+              Use the Evaluator / Approver role to review processed documents.
+            </div>
+          `
+          : ""
+    ) +
+    `
+      <form id="askForm" class="card">
+        <label for="question">Ask a question</label>
+        <textarea
+          id="question"
+          maxlength="2000"
+          placeholder="Ask about a feature, requirement, current behaviour, related functionality or previous release..."
+          required
+        >${esc(draft)}</textarea>
+
+        <div class="row between" style="margin-top:12px">
+          <span class="small muted">Answers stay linked to their evidence.</span>
+          <button
+            class="primary"
+            id="askButton"
+            ${busy ? "disabled" : ""}
+          >${busy ? "Searching…" : "Ask →"}</button>
+        </div>
+
+        <details style="margin-top:20px">
+          <summary>Refine search — Optional</summary>
+          <div class="filters">${filtersHTML()}</div>
+          <button
+            type="button"
+            data-action="clearFilters"
+            class="small"
+            style="margin-top:12px"
+          >Clear filters</button>
+        </details>
+
+        <div class="chips">
+          ${[
+            "How does request review work?",
+            "What changed in request review?",
+            "What are the review stages?",
+            "What is the export visibility?"
+          ].map(question => `
+            <button
+              type="button"
+              data-question="${esc(question)}"
+            >${esc(question)}</button>
+          `).join("")}
+        </div>
+
+        <p class="small muted" style="margin:10px 0 0">
+          Suggestions refer to the optional fictional examples
+          and only fill the question box.
+        </p>
+      </form>
+
+      <div id="answer" aria-live="polite">
+        ${active
+          ? answerHTML(state.history.find(item => item.id === active))
+          : ""}
+      </div>
+    `;
+
+  $("#askForm").addEventListener("submit", event => {
+    event.preventDefault();
+    ask($("#question").value);
+  });
+
+  $("#question").addEventListener("input", event => {
+    draft = event.target.value;
+  });
+
+  document.querySelectorAll("[data-filter]").forEach(element => {
+    element.onchange = () => {
+      filter[element.dataset.filter] = element.value;
+    };
+  });
+}
+
+const stop = new Set(
+  (
+    "a an the how what does do is are was were can could should would " +
+    "i we you it this that those these of to in for and or on with from " +
+    "about tell me please explain work works current currently previous " +
+    "historical changed change feature functionality behaviour behavior " +
+    "which source sources answer information available get has have been did"
+  ).split(" ")
+);
+
+function tokens(text) {
+  return [
+    ...new Set(
+      (String(text).toLowerCase().match(/[\p{L}\p{N}_-]+/gu) || [])
+        .filter(token => token.length > 1 && !stop.has(token))
+    )
+  ];
+}
+
+/*
+This explicit synonym map is a teaching approximation.
+It is not an embedding model or semantic understanding.
+*/
+const aliases = {
+  authorize: "review",
+  authorise: "review",
+  approval: "review",
+  approve: "review",
+  approver: "reviewer",
+  validate: "review",
+  validation: "review",
+  download: "export",
+  exporting: "export",
+  phases: "stages",
+  phase: "stages"
+};
+
+const normalize = values =>
+  [...new Set(values.map(value => aliases[value] || value))];
+
+function chunk(text, documentId) {
+  const parents = [];
+  let title = "Document text";
+  let lines = [];
+
+  function flush() {
+    const content = lines.join("\n").trim();
+
+    if (content) {
+      for (let index = 0; index < content.length; index += 1600) {
+        parents.push({
+          id: `${documentId}-p${parents.length}`,
+          section: title,
+          text: content.slice(index, index + 1600)
+        });
+      }
+    }
+
+    lines = [];
+  }
+
+  for (const line of text.replace(/\r\n?/g, "\n").split("\n")) {
+    if (/^#{1,6}\s+/.test(line)) {
+      flush();
+      title = line.replace(/^#{1,6}\s+/, "").trim();
+    } else {
+      lines.push(line);
+    }
+  }
+
+  flush();
+
+  const chunks = [];
+
+  for (const parent of parents) {
+    const pieces = parent.text.split(/\n\s*\n/);
+
+    for (const piece of pieces) {
+      if (!piece.trim()) continue;
+
+      for (let start = 0; start < piece.length; start += 650) {
+        chunks.push({
+          id: `${documentId}-c${chunks.length}`,
+          parentId: parent.id,
+          section: parent.section,
+          text: piece.slice(start, start + 650).trim()
+        });
+      }
+    }
+  }
+
+  return { parents, chunks };
+}
+
+function retrieve(query, filters, documents, fault = "none") {
+  const terms = tokens(query);
+  const expanded = normalize(terms);
+  const rows = [];
+
+  for (const document of documents.filter(eligible)) {
+    if (
+      Object.entries(filters).some(
+        ([key, value]) => value && document[key] !== value
+      )
+    ) continue;
+
+    for (const passage of document.chunks) {
+      const words = tokens(passage.section + " " + passage.text);
+      const normalized = normalize(words);
+
+      const exact = terms.filter(term => words.includes(term)).length;
+      const semantic = expanded.filter(
+        term => normalized.includes(term)
+      ).length;
+
+      if (!exact && !semantic) continue;
+
+      rows.push({
+        documentId: document.id,
+        chunkId: passage.id,
+        parentId: passage.parentId,
+        exact,
+        semantic,
+        coverage: semantic / Math.max(1, expanded.length)
+      });
+    }
+  }
+
+  const lexical = [...rows].sort((a, b) => b.exact - a.exact);
+  const synonyms = [...rows].sort((a, b) => b.semantic - a.semantic);
+
+  rows.forEach(row => {
+    row.fused =
+      (row.exact ? 1 / (60 + lexical.indexOf(row) + 1) : 0) +
+      (row.semantic ? 1 / (60 + synonyms.indexOf(row) + 1) : 0);
+  });
+
+  rows.sort((a, b) =>
+    fault === "reranker"
+      ? b.fused - a.fused
+      : b.coverage - a.coverage || b.fused - a.fused
+  );
+
+  const seen = new Set();
+
+  return rows.filter(row => {
+    const document = documents.find(item => item.id === row.documentId);
+    const passage = document.chunks.find(item => item.id === row.chunkId);
+    const key = document.id + "|" + passage.text;
+
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  }).slice(0, 6);
+}
+
+function decide(query, filters, documents, fault = "none") {
+  const terms = tokens(query);
+  let refs = [];
+  let answerStatus = "answered";
+
+  if (!terms.length) {
+    answerStatus = "clarification_required";
+  } else if (fault === "retrieval") {
+    answerStatus = "retrieval_failed";
+  } else {
+    refs = retrieve(query, filters, documents, fault);
+
+    if (!refs.length) {
+      answerStatus = "insufficient_information";
+    } else if (fault === "generation") {
+      answerStatus = "generation_failed";
+    } else if (fault === "citation") {
+      answerStatus = "citation_validation_failed";
+    } else {
+      /*
+      Conflict detection is deliberately restricted to explicit fixture
+      markers. It does not claim to understand arbitrary contradictions.
+      */
+      const groups = new Map();
+
+      for (const reference of refs) {
+        const document = documents.find(
+          item => item.id === reference.documentId
+        );
+
+        if (
+          document.conflictGroup &&
+          document.applicability === "current"
+        ) {
+          if (!groups.has(document.conflictGroup)) {
+            groups.set(document.conflictGroup, new Set());
+          }
+
+          groups.get(document.conflictGroup).add(document.conflictValue);
+        }
+      }
+
+      if ([...groups.values()].some(values => values.size > 1)) {
+        answerStatus = "conflicting_sources";
+      }
+    }
+  }
+
+  return { status: answerStatus, refs };
+}
+
+async function ask(query) {
+  query = query.trim();
+
+  if (busy || !query) return;
+
+  if (query.length > 2000) {
+    toast("Please keep your question within 2,000 characters.");
+    return;
+  }
+
+  busy = true;
+  draft = query;
+  renderAsk();
+
+  const started = performance.now();
+  const chosenFilters = structuredClone(filter);
+  const selectedFault = failure;
+
+  $("#answer").innerHTML = `
+    <div class="card pending">
+      <strong>Checking available sources…</strong>
+      <p class="muted small">
+        Only active, approved documents are eligible.
+      </p>
+    </div>
+  `;
+
+  announce("Searching approved sources.");
+  await wait(350);
+
+  const retrievalStarted = performance.now();
+
+  let result = decide(
+    query,
+    chosenFilters,
+    state.docs,
+    selectedFault
+  );
+
+  const retrievalMs = Math.round(
+    performance.now() - retrievalStarted
+  );
+
+  await wait(150);
+
+  /*
+  Re-evaluate against live state after the delay.
+  Passage text is never cached in the history or trace.
+  */
+  result = decide(
+    query,
+    chosenFilters,
+    state.docs,
+    selectedFault
+  );
+
+  const record = {
+    id: uid(),
+    query,
+    filters: chosenFilters,
+    time: now(),
+    role,
+    status: result.status,
+    refs: result.refs,
+    fault: selectedFault,
+    totalMs: Math.round(performance.now() - started),
+    retrievalMs,
+    feedback: null
+  };
+
+  state.history.unshift(record);
+  active = record.id;
+  state.history = state.history.slice(0, 100);
+
+  save();
+  busy = false;
+  render();
+  announce(labels[record.status]);
+}
+
+function resolve(reference, documents = state.docs) {
+  const document = documents.find(
+    item => item.id === reference.documentId
+  );
+
+  if (!eligible(document)) return null;
+
+  const passage = document.chunks.find(
+    item => item.id === reference.chunkId
+  );
+
+  return passage ? { d: document, c: passage } : null;
+}
+
+function citation(reference, index) {
+  const resolved = resolve(reference);
+
+  const title = resolved
+    ? esc([
+        resolved.d.title,
+        resolved.c.section,
+        resolved.d.version
+      ].filter(Boolean).join(" · "))
+    : "Source no longer available";
+
+  return `
+    <button
+      class="cite"
+      data-action="cite"
+      data-doc="${esc(reference.documentId)}"
+      data-chunk="${esc(reference.chunkId)}"
+    >[${index + 1}] ${title}</button>
+  `;
+}
+
+function answerHTML(history) {
+  if (!history) return "";
+
+  const messages = {
+    answered: "Matching passages from approved sources",
+    clarification_required: "More information is needed",
+    insufficient_information:
+      "Insufficient information in the available sources",
+    conflicting_sources: "Conflicting information found",
+    generation_failed:
+      "I couldn't generate an answer right now. You can still review the retrieved sources.",
+    citation_validation_failed:
+      "The answer could not be fully verified against the available sources. Please review the retrieved sources directly.",
+    retrieval_failed:
+      "We couldn't retrieve knowledge right now. Please try again."
+  };
+
+  let body = "";
+  const stale = history.refs.some(reference => !resolve(reference));
+
+  if (history.status === "clarification_required") {
+    body = `
+      <p>
+        Your question could refer to multiple areas.
+        Please provide a feature or topic and, if relevant,
+        a client, version or jurisdiction.
+      </p>
+    `;
+  }
+
+  if (history.status === "insufficient_information") {
+    body = `
+      <p>
+        I could not find enough supporting information in the approved
+        knowledge base to answer this question reliably.
+      </p>
+    `;
+  }
+
+  if (["answered", "conflicting_sources"].includes(history.status)) {
+    body += `
+      <p class="small muted">
+        Verbatim source excerpts, not an AI-generated answer.
+        Check applicability before using them for development or testing.
+      </p>
+    `;
+
+    if (history.status === "conflicting_sources") {
+      body += `
+        <div class="notice warn">
+          These fictional example documents have an explicit
+          conflicting-policy marker.
+          Arbitrary uploaded-text contradictions are not automatically detected.
+        </div>
+      `;
+    }
+
+    for (const [applicability, title] of [
+      ["current", "Current documented behaviour"],
+      ["historical", "Historical information"],
+      ["unknown", "Applicability not established"]
+    ]) {
+      const matching = history.refs
+        .map((reference, index) => ({
+          reference,
+          index,
+          resolved: resolve(reference)
+        }))
+        .filter(
+          item =>
+            item.resolved &&
+            item.resolved.d.applicability === applicability
+        );
+
+      if (matching.length) {
+        body += `
+          <section class="answer-section">
+            <h3>${title}</h3>
+            ${matching.map(({ reference, index, resolved }) => `
+              <blockquote>${esc(resolved.c.text)}</blockquote>
+              <div class="small muted">${facts(resolved.d)}</div>
+              ${citation(reference, index)}
+            `).join("")}
+          </section>
+        `;
+      }
+    }
+
+    if (history.status === "conflicting_sources") {
+      body += `
+        <p style="margin-top:20px">
+          The available evidence is not sufficient to determine
+          which information applies. Consult a PO / SME.
+        </p>
+      `;
+    }
+  }
+
+  if (history.refs.length) {
+    body += `
+      <details style="margin-top:20px">
+        <summary>
+          Sources used or retrieved (${history.refs.length})
+        </summary>
+        ${history.refs.map(
+          (reference, index) =>
+            `<div>${citation(reference, index)}</div>`
+        ).join("")}
+      </details>
+    `;
+  }
+
+  return `
+    <article class="card">
+      <div class="row between">
+        <span class="eyebrow">Your question</span>
+        ${tag(history.status)}
+      </div>
+
+      <p><strong>${esc(history.query)}</strong></p>
+
+      <h2 style="margin-top:22px">
+        ${esc(messages[history.status] || "Result")}
+      </h2>
+
+      ${stale ? `
+        <div class="notice warn">
+          Some supporting sources are no longer available.
+          Removed passages are hidden and cannot support new answers.
+        </div>
+      ` : ""}
+
+      ${body}
+
+      <div class="row" style="margin-top:20px">
+        <button data-action="refine" data-id="${history.id}">
+          Refine question
+        </button>
+        <button data-page="sources">View sources</button>
+        <button data-action="escalate" data-id="${history.id}">
+          Consult PO / SME
+        </button>
+      </div>
+
+      <hr>
+
+      <div class="row">
+        <strong class="small">Was this answer useful?</strong>
+        <button
+          data-action="feedbackYes"
+          data-id="${history.id}"
+          ${history.feedback?.useful === true ? 'aria-pressed="true"' : ""}
+        >Yes</button>
+        <button
+          data-action="feedbackNo"
+          data-id="${history.id}"
+          ${history.feedback?.useful === false ? 'aria-pressed="true"' : ""}
+        >No</button>
+        ${history.feedback ? `
+          <span class="small muted">
+            Feedback saved with this request.
+          </span>
+        ` : ""}
+      </div>
+
+      <form id="followForm" style="margin-top:22px">
+        <label for="follow">Ask a follow-up</label>
+        <div class="row">
+          <input
+            id="follow"
+            required
+            maxlength="2000"
+            placeholder="Name the feature or topic for a fresh evidence search"
+          >
+          <button class="primary">Ask</button>
+        </div>
+      </form>
+    </article>
+  `;
+}
+
+function renderHistory() {
+  $("#main").innerHTML =
+    heading(
+      "Conversation history",
+      "Reopen the questions you asked in this browser tab."
+    ) +
+    (
+      state.history.length
+        ? `
+          <div class="card">
+            ${state.history.map(history => `
+              <div class="source">
+                <div class="row between">
+                  <h3>${esc(history.query)}</h3>
+                  ${tag(history.status)}
+                </div>
+                <p class="small muted">
+                  ${esc(new Date(history.time).toLocaleString())}
+                </p>
+                <button
+                  data-action="openHistory"
+                  data-id="${history.id}"
+                >Open conversation</button>
+              </div>
+            `).join("")}
+          </div>
+        `
+        : empty(
+            "No conversations yet",
+            "Ask your first question to start a conversation."
+          )
+    );
+}
+
+function renderSources() {
+  const documents = state.docs.filter(eligible);
+
+  $("#main").innerHTML =
+    heading(
+      "Sources",
+      "Browse approved, active documents available to the simulator."
+    ) +
+    (
+      documents.length
+        ? `
+          <div class="card">
+            ${documents.map(document => `
+              <div class="source">
+                <div class="row between">
+                  <h3>${esc(document.title)}</h3>
+                  ${tag("approved")}
+                </div>
+                <p class="small muted">${facts(document)}</p>
+                ${document.fixture ? `
+                  <p class="small muted">
+                    Fictional demonstration document
+                  </p>
+                ` : ""}
+                <button
+                  data-action="document"
+                  data-doc="${document.id}"
+                >Inspect source</button>
+              </div>
+            `).join("")}
+          </div>
+        `
+        : empty(
+            "No approved sources",
+            "Uploaded documents must be processed and approved before they appear here."
+          )
+    );
+}
+
+function inspect(documentId, chunkId) {
+  const document = getDoc(documentId);
+
+  if (
+    !document ||
+    document.deletion !== "active" ||
+    (
+      !eligible(document) &&
+      role !== "admin" &&
+      role !== "evaluator"
+    )
+  ) {
+    modal(
+      "Source no longer available",
+      "<p>This source is unavailable in your current view.</p>"
+    );
+    return;
+  }
+
+  const passage = document.chunks?.find(
+    item => item.id === chunkId
+  );
+
+  const parent = passage && document.parents.find(
+    item => item.id === passage.parentId
+  );
+
+  modal(
+    document.title,
+    `
+      <p class="small muted">${facts(document)}</p>
+      <div class="row">
+        ${tag(document.status)}
+        ${document.fixture ? tag("Fictional example") : ""}
+      </div>
+
+      ${document.error ? `
+        <div class="notice warn" style="margin-top:16px">
+          ${esc(document.error)}
+        </div>
+      ` : ""}
+
+      ${passage ? `
+        <h3 style="margin-top:20px">${esc(passage.section)}</h3>
+        <blockquote>${esc(passage.text)}</blockquote>
+        <details>
+          <summary>View surrounding section</summary>
+          <pre>${esc(parent?.text || passage.text)}</pre>
+        </details>
+      ` : `
+        <h3 style="margin-top:20px">Document text</h3>
+        <pre>${esc(document.text || "No extracted text is available.")}</pre>
+      `}
+    `
+  );
+}
+
+function renderUpload() {
+  $("#main").innerHTML =
+    heading(
+      "Upload knowledge",
+      "Add a non-sensitive test document, process it, then switch to Evaluator / Approver for review."
+    ) +
+    `
+      <div class="notice">
+        This offline simulator reads UTF-8 TXT and Markdown, up to 1 MB each.
+        PDF/DOCX are part of the production specification;
+        their parsers and OCR are unavailable here.
+        They will not be falsely marked as parsed.
+      </div>
+
+      <form id="uploadForm" class="card">
+        <label for="file">Select document</label>
+        <input
+          id="file"
+          type="file"
+          accept=".txt,.md,.markdown,.pdf,.docx"
+        >
+
+        <p class="small muted" style="margin-top:10px">
+          Or paste test text below.
+          Do not provide credentials or confidential documents.
+        </p>
+
+        <label for="text">Paste document text</label>
+        <textarea
+          id="text"
+          placeholder="# Feature name&#10;Enter the actual documented behaviour here."
+          maxlength="50000"
+        ></textarea>
+
+        <div class="grid" style="margin-top:20px">
+          <label>
+            Document title
+            <input
+              name="title"
+              maxlength="160"
+              placeholder="Optional; defaults to filename"
+            >
+          </label>
+
+          <label>
+            Document type
+            <select name="type">
+              ${types.map(type => `<option>${type}</option>`).join("")}
+            </select>
+          </label>
+
+          ${metaFields
+            .filter(([key]) => key !== "type")
+            .map(([key, label]) => `
+              <label>
+                ${label}
+                <input
+                  name="${key}"
+                  maxlength="100"
+                  placeholder="Optional — leave blank if unknown"
+                >
+              </label>
+            `).join("")}
+
+          <label>
+            Applicability
+            <select name="applicability">
+              <option value="unknown">Unknown</option>
+              <option value="current">Current</option>
+              <option value="historical">Historical</option>
+            </select>
+          </label>
+
+          <label>
+            Explicitly replaces
+            <select name="replaces">
+              <option value="">No established relationship</option>
+              ${state.docs.filter(eligible).map(document => `
+                <option value="${document.id}">
+                  ${esc(document.title)} ${esc(document.version)}
+                </option>
+              `).join("")}
+            </select>
+          </label>
+        </div>
+
+        <div class="foot">
+          <button class="primary" ${busy ? "disabled" : ""}>
+            Upload & process
+          </button>
+        </div>
+
+        <div
+          id="uploadStatus"
+          class="status-text"
+          role="status"
+        ></div>
+      </form>
+    `;
+
+  $("#uploadForm").onsubmit = event => {
+    event.preventDefault();
+    upload(event.target);
+  };
+}
+
+async function upload(form) {
+  if (!guard("admin") || busy) return;
+
+  const file = $("#file").files[0];
+  const pasted = $("#text").value.trim();
+
+  if (file && pasted) {
+    toast("Choose a file or paste text, not both.");
+    return;
+  }
+
+  if (!file && !pasted) {
+    toast("Choose a file or paste some document text.");
+    return;
+  }
+
+  if (file && (file.size === 0 || file.size > MAX_FILE)) {
+    toast(
+      "The file must contain data and be no larger than 1 MB in this simulator."
+    );
+    return;
+  }
+
+  const extension = file
+    ? file.name.split(".").pop().toLowerCase()
+    : "txt";
+
+  if (!["txt", "md", "markdown", "pdf", "docx"].includes(extension)) {
+    toast("Unsupported format. Use TXT or Markdown for working text ingestion.");
+    return;
+  }
+
+  if (
+    file &&
+    (/[\\/]/.test(file.name) || file.name.includes(".."))
+  ) {
+    toast("Use a filename without path characters or consecutive dots.");
+    return;
+  }
+
+  if (
+    file &&
+    ["txt", "md", "markdown"].includes(extension) &&
+    file.type &&
+    !/^(text\/|application\/(octet-stream|x-empty))/.test(file.type)
+  ) {
+    toast("File type does not match a supported text document.");
+    return;
+  }
+
+  const fields = new FormData(form);
+  busy = true;
+  form.querySelector("button[type=submit],button.primary").disabled = true;
+
+  try {
+    let text = pasted;
+    const unsupported = ["pdf", "docx"].includes(extension);
+
+    if (file && !unsupported) {
+      const bytes = await file.arrayBuffer();
+      text = new TextDecoder("utf-8", { fatal: true })
+        .decode(bytes)
+        .trim();
+
+      if (
+        !text ||
+        text.includes("\u0000") ||
+        text.startsWith("%PDF-") ||
+        text.startsWith("PK\u0003\u0004")
+      ) {
+        throw Error("invalid");
+      }
+    }
+
+    if (
+      !unsupported &&
+      state.docs.some(
+        document =>
+          document.deletion === "active" &&
+          document.text === text
+      )
+    ) {
+      toast("Duplicate text already exists. Upload a changed version instead.");
+      return;
+    }
+
+    const document = {
+      id: uid(),
+      title: String(
+        fields.get("title") ||
+        file?.name ||
+        "Pasted document"
+      ).trim(),
+      filename: file?.name || "pasted-document.txt",
+      text,
+      created: now(),
+      uploader: "Local Admin preview",
+      status: "uploaded",
+      deletion: "active",
+      indexed: false,
+      parents: [],
+      chunks: [],
+      applicability: String(fields.get("applicability")),
+      replaces: String(fields.get("replaces") || ""),
+      fixture: false
+    };
+
+    for (const [key] of metaFields) {
+      document[key] = String(fields.get(key) || "").trim();
+    }
+
+    state.docs.push(document);
+    save();
+
+    if (unsupported) {
+      document.status = "processing_failed";
+      document.error =
+        "This simulator has no PDF/DOCX parser or OCR. " +
+        "Export the document as UTF-8 TXT/Markdown and upload it. " +
+        "No text was indexed.";
+
+      save();
+
+      toast(
+        "File recorded, but parsing is unavailable. No knowledge was published."
+      );
+
+      page = "manage";
+      location.hash = "manage";
+    } else {
+      await processDoc(document);
+    }
+  } catch {
+    toast(
+      "The document could not be read as UTF-8 text. Try a valid TXT or Markdown file."
+    );
+  } finally {
+    busy = false;
+    render();
+  }
+}
+
+async function processDoc(document) {
+  if (document.deletion !== "active") return;
+
+  document.status = "processing";
+  document.error = "";
+  save();
+
+  const stages = [
+    "Parse text and headings",
+    "Create parent / child passages",
+    "Prepare local search index",
+    "Await human evaluation"
+  ];
+
+  for (let index = 0; index < stages.length; index++) {
+    if (document.deletion !== "active") return;
+
+    ingest = { id: document.id, stage: index };
+
+    const target = $("#uploadStatus");
+
+    if (target) {
+      target.innerHTML = `
+        <progress class="progress" value="${index}" max="4"></progress>
+        <p>${stages[index]}</p>
+      `;
+    }
+
+    await wait(180);
+  }
+
+  if (document.deletion !== "active") return;
+
+  const parsed = chunk(document.text, document.id);
+  document.parents = parsed.parents;
+  document.chunks = parsed.chunks;
+  document.indexed = !!document.chunks.length;
+  document.status = document.indexed
+    ? "awaiting_evaluation"
+    : "processing_failed";
+
+  ingest = null;
+  save();
+
+  toast(
+    "Processing complete. Switch to Evaluator / Approver to review and approve."
+  );
+
+  page = "manage";
+  location.hash = "manage";
+}
+
+function renderManage() {
+  const documents = state.docs.filter(document =>
+    (
+      !listQuery ||
+      (document.title + " " + document.filename)
+        .toLowerCase()
+        .includes(listQuery.toLowerCase())
+    ) &&
+    (!listState || status(document) === listState)
+  );
+
+  const maxPage = Math.max(1, Math.ceil(documents.length / 6));
+  pageNo = Math.min(pageNo, maxPage);
+
+  const visible = documents.slice(
+    (pageNo - 1) * 6,
+    pageNo * 6
+  );
+
+  $("#main").innerHTML =
+    heading(
+      "Manage RAG documents",
+      "Inspect the actual local inventory. Deletion immediately removes a document from future retrieval."
+    ) +
+    `
+      <div class="row toolbar">
+        <input
+          id="docSearch"
+          aria-label="Search documents"
+          placeholder="Search title or filename"
+          value="${esc(listQuery)}"
+        >
+
+        <select id="docStatus" aria-label="Filter document status">
+          <option value="">All statuses</option>
+          ${[...new Set(state.docs.map(status))].map(value => `
+            <option
+              value="${value}"
+              ${value === listState ? "selected" : ""}
+            >${esc(labels[value] || value)}</option>
+          `).join("")}
+        </select>
+
+        <button data-action="applyList">Apply</button>
+        <button data-page="upload" class="primary">Upload document</button>
+      </div>
+    ` +
+    (
+      documents.length
+        ? `
+          <div class="card">
+            <div class="tablewrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>State</th>
+                    <th>Retrievable</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${visible.map(document => `
+                    <tr>
+                      <td>
+                        <strong>${esc(document.title)}</strong>
+                        <div class="small muted">
+                          ${esc(document.filename)}<br>
+                          ${facts(document)}<br>
+                          ${esc(new Date(document.created).toLocaleString())}
+                          · ${esc(document.uploader || "Local demo")}
+                        </div>
+                      </td>
+                      <td>
+                        ${tag(status(document))}
+                        <div class="small">
+                          ${document.fixture
+                            ? "Fictional example"
+                            : "Local test upload"}
+                        </div>
+                      </td>
+                      <td>${eligible(document) ? "Yes" : "No"}</td>
+                      <td>
+                        <div class="row">
+                          ${document.deletion === "active" ? `
+                            <button
+                              data-action="document"
+                              data-doc="${document.id}"
+                            >Inspect</button>
+
+                            ${document.status === "processing_failed" &&
+                              document.text ? `
+                                <button
+                                  data-action="reindex"
+                                  data-doc="${document.id}"
+                                >Retry ingestion</button>
+                              ` : ""}
+
+                            <button
+                              class="danger"
+                              data-action="delete"
+                              data-doc="${document.id}"
+                            >Delete</button>
+                          ` : document.deletion === "deletion_failed" ? `
+                            <button
+                              data-action="retryDelete"
+                              data-doc="${document.id}"
+                            >Retry cleanup</button>
+                          ` : esc(labels[document.deletion])}
+                        </div>
+                      </td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="row between" style="margin-top:17px">
+              <span class="small muted">
+                ${documents.length} local records · Page ${pageNo} of ${maxPage}
+              </span>
+              <div class="row">
+                <button
+                  data-action="prev"
+                  ${pageNo === 1 ? "disabled" : ""}
+                >Previous</button>
+                <button
+                  data-action="next"
+                  ${pageNo === maxPage ? "disabled" : ""}
+                >Next</button>
+              </div>
+            </div>
+          </div>
+        `
+        : empty(
+            "No matching documents",
+            "Upload a document or change your search/filter."
+          )
+    );
+}
+
+function deletePrompt(documentId) {
+  if (!guard("admin")) return;
+
+  const document = getDoc(documentId);
+
+  if (!document || document.deletion !== "active") return;
+
+  modal(
+    "Delete document?",
+    `
+      <p>
+        <strong>${esc(document.title)}</strong>
+        ${document.version ? " · " + esc(document.version) : ""}
+      </p>
+
+      <p>
+        This removes this version and its local passages from the simulator.
+        Future searches cannot use it. Other versions are unchanged.
+      </p>
+
+      <p>Old citations will show “Source no longer available.”</p>
+
+      <label class="check">
+        <input type="checkbox" id="failCleanup">
+        Simulate a cleanup failure after retrieval is disabled
+      </label>
+
+      <div class="foot">
+        <button data-action="close">Cancel</button>
+        <button
+          class="danger"
+          data-action="confirmDelete"
+          data-doc="${documentId}"
+        >Delete document</button>
+      </div>
+    `
+  );
+}
+
+async function deleteDoc(documentId, fail = false) {
+  if (!guard("admin") || busy) return;
+
+  const document = getDoc(documentId);
+
+  if (
+    !document ||
+    ["deleted", "deleting"].includes(document.deletion)
+  ) return;
+
+  document.deletion = "deleting";
+  document.indexed = false;
+
+  state.audit.unshift({
+    id: uid(),
+    documentId,
+    actor: "Local Admin preview",
+    time: now(),
+    outcome: "deleting"
+  });
+
+  save();
+  $("#dialog").close();
+  render();
+  announce("Document excluded from retrieval. Cleanup started.");
+
+  await wait(400);
+
+  if (getDoc(documentId) !== document) return;
+
+  if (fail) {
+    document.deletion = "deletion_failed";
+
+    state.audit.unshift({
+      id: uid(),
+      documentId,
+      actor: "Local Admin preview",
+      time: now(),
+      outcome: "cleanup_failed"
+    });
+
+    toast(
+      "Cleanup failed in the simulation. The document remains excluded. Use Retry cleanup."
+    );
+  } else {
+    document.text = "";
+    document.parents = [];
+    document.chunks = [];
+    document.error = "";
+    document.conflictGroup = "";
+    document.conflictValue = "";
+    document.deletion = "deleted";
+
+    state.audit.unshift({
+      id: uid(),
+      documentId,
+      actor: "Local Admin preview",
+      time: now(),
+      outcome: "deleted"
+    });
+
+    toast("Document deleted. Its passages are no longer available.");
+  }
+
+  save();
+  render();
+  announce(labels[document.deletion] || document.deletion);
+}
+
+function renderEvaluation() {
+  const documents = state.docs.filter(document =>
+    document.deletion === "active" &&
+    ["awaiting_evaluation", "evaluation_failed", "rejected"]
+      .includes(document.status)
+  );
+
+  $("#main").innerHTML =
+    heading(
+      "Evaluate before publishing",
+      "Inspect document content and approve only what should be available to consumers."
+    ) +
+    `
+      <div class="notice">
+        Local automated checks verify non-empty passages and references.
+        LLM-as-a-Judge is not connected; factual accuracy, completeness
+        and applicability require human review.
+      </div>
+    ` +
+    (
+      documents.length
+        ? `
+          <div class="card">
+            ${documents.map(document => `
+              <div class="source">
+                <div class="row between">
+                  <h3>${esc(document.title)}</h3>
+                  ${tag(document.status)}
+                </div>
+                <p class="small muted">${facts(document)}</p>
+                <div class="row">
+                  <button
+                    data-action="document"
+                    data-doc="${document.id}"
+                  >Inspect document</button>
+                  <button
+                    class="primary"
+                    data-action="review"
+                    data-doc="${document.id}"
+                  >Review decision</button>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `
+        : empty(
+            "Nothing awaiting review",
+            "Newly processed documents appear here before consumer availability."
+          )
+    ) +
+    `
+      <div class="card">
+        <h2>Fixed simulator checks</h2>
+        <p class="muted small">
+          Tests use isolated fictional fixtures.
+          They do not approve your documents or certify the
+          production application's security or AI quality.
+        </p>
+        <button data-action="tests">Run simulator checks</button>
+        <div id="testResults" style="margin-top:14px">
+          ${testsHTML()}
+        </div>
+      </div>
+    `;
+}
+
+function reviewPrompt(documentId) {
+  if (!guard("evaluator")) return;
+
+  const document = getDoc(documentId);
+
+  if (!document || document.deletion !== "active") return;
+
+  const pass =
+    document.indexed &&
+    document.chunks.length > 0 &&
+    document.chunks.every(passage =>
+      document.parents.some(parent => parent.id === passage.parentId)
+    );
+
+  modal(
+    "Review knowledge",
+    `
+      <h3>${esc(document.title)}</h3>
+
+      <p>
+        Local structure check: <strong>${pass ? "PASS" : "FAIL"}</strong>.
+        LLM-as-a-Judge: <strong>NOT RUN</strong>.
+      </p>
+
+      <pre>${esc(document.text)}</pre>
+
+      <label class="check">
+        <input id="reviewed" type="checkbox">
+        I reviewed this test content, metadata and applicability.
+      </label>
+
+      ${document.replaces ? `
+        <div class="notice warn" style="margin-top:15px">
+          Approval marks the explicitly linked prior version as historical.
+          It does not delete it.
+        </div>
+      ` : ""}
+
+      <div class="foot">
+        <button
+          class="danger"
+          data-action="reject"
+          data-doc="${documentId}"
+        >Reject</button>
+        <button
+          class="primary"
+          data-action="approve"
+          data-doc="${documentId}"
+          ${pass ? "" : "disabled"}
+        >Approve</button>
+      </div>
+    `
+  );
+}
+
+function review(documentId, approved) {
+  if (!guard("evaluator")) return;
+
+  const document = getDoc(documentId);
+
+  if (!document || document.deletion !== "active") return;
+
+  if (approved && !$("#reviewed")?.checked) {
+    toast("Review the content and confirm the checkbox first.");
+    return;
+  }
+
+  if (approved && (!document.indexed || !document.chunks.length)) {
+    return;
+  }
+
+  document.status = approved ? "approved" : "rejected";
+
+  if (approved && document.replaces) {
+    const previous = getDoc(document.replaces);
+
+    if (
+      previous &&
+      previous.id !== document.id &&
+      previous.deletion === "active"
+    ) {
+      previous.applicability = "historical";
+    }
+  }
+
+  save();
+  $("#dialog").close();
+  render();
+
+  toast(
+    approved
+      ? "Approved. This document is now available in Sources and search."
+      : "Rejected. This document remains excluded from consumer retrieval."
+  );
+}
+
+function renderObservability() {
+  const traces = state.history.filter(history =>
+    (
+      history.id + " " +
+      history.query + " " +
+      history.refs.map(reference => reference.documentId).join(" ")
+    ).toLowerCase().includes(traceQuery.toLowerCase())
+  );
+
+  $("#main").innerHTML =
+    heading(
+      "Observability",
+      "Follow a local request from filters to selected evidence and feedback."
+    ) +
+    `
+      <div class="notice">
+        No provider, embedding model or real vector database is running.
+        Scores below are computed local keyword / synonym matches.
+        They are not confidence or grounding percentages.
+      </div>
+
+      <div class="row toolbar">
+        <input
+          id="traceSearch"
+          aria-label="Search traces"
+          placeholder="Trace ID, question or document ID"
+          value="${esc(traceQuery)}"
+        >
+        <button data-action="searchTraces">Search</button>
+      </div>
+    ` +
+    (
+      traces.length
+        ? `
+          <div class="card">
+            ${traces.map(history => `
+              <div class="source">
+                <div class="row between">
+                  <h3>${esc(history.query)}</h3>
+                  ${tag(history.status)}
+                </div>
+                <p class="small muted">
+                  ${esc(history.id)} ·
+                  ${history.totalMs} ms local elapsed time
+                </p>
+                <button
+                  data-action="trace"
+                  data-id="${history.id}"
+                >Inspect trace</button>
+              </div>
+            `).join("")}
+          </div>
+        `
+        : empty(
+            "No matching traces",
+            "Ask a question to record a local trace."
+          )
+    ) +
+    `
+      <div class="card">
+        <h2>Deletion audit</h2>
+
+        ${state.audit.length ? `
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Document ID</th>
+                  <th>Actor / timestamp</th>
+                  <th>Outcome</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${state.audit.slice(0, 30).map(audit => `
+                  <tr>
+                    <td>${esc(audit.documentId)}</td>
+                    <td>
+                      ${esc(audit.actor)}<br>
+                      ${esc(new Date(audit.time).toLocaleString())}
+                    </td>
+                    <td>${esc(audit.outcome)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : '<p class="muted">No deletion events yet.</p>'}
+      </div>
+    `;
+}
+
+function inspectTrace(historyId) {
+  if (!guard("ops")) return;
+
+  const history = state.history.find(item => item.id === historyId);
+  if (!history) return;
+
+  const selected = history.refs.map((reference, index) => {
+    const resolved = resolve(reference);
+
+    return {
+      citation: index + 1,
+      documentId: reference.documentId,
+      chunkId: reference.chunkId,
+      parentId: reference.parentId,
+      keywordMatches: reference.exact,
+      synonymMatches: reference.semantic,
+      fusionScore: Number(reference.fused.toFixed(5)),
+      passage: resolved
+        ? resolved.c.text
+        : "Source no longer available"
+    };
+  });
+
+  modal(
+    "Request trace",
+    `
+      <p class="small muted">
+        ${esc(history.id)} · ${esc(history.role)} · ${esc(history.time)}
+      </p>
+
+      <div class="flow">
+        ${[
+          "User request",
+          "Metadata filters",
+          "Local retrieval",
+          "Deterministic ranking",
+          "Selected evidence",
+          "Extractive response",
+          "Reference checks",
+          "Feedback"
+        ].map(stage => `
+          <div class="done">
+            <strong>${stage}</strong>
+            Local simulation
+          </div>
+        `).join("")}
+      </div>
+
+      <h3>Query and applied filters</h3>
+      <pre>${esc(JSON.stringify({
+        query: history.query,
+        filters: history.filters,
+        status: history.status,
+        failureScenario: history.fault,
+        totalMs: history.totalMs,
+        retrievalMs: history.retrievalMs,
+        model: "None — extractive simulator",
+        faithfulness: "Human review required; no model judge",
+        feedback: history.feedback
+      }, null, 2))}</pre>
+
+      <h3>Selected evidence / simulated generation context</h3>
+      <pre>${esc(JSON.stringify(selected, null, 2))}</pre>
+
+      <p class="small muted">
+        Passages are resolved on opening this view;
+        deleted source text is not retained in traces.
+      </p>
+    `
+  );
+}
+
+const steps = [
+  [
+    "Runnable application shell",
+    "Create the frontend/backend shell, navigation, safe errors and /health. Verify typecheck, tests, build and localhost; then STOP."
+  ],
+  [
+    "Database foundation",
+    "Add PostgreSQL, migrations and repository checks. Prepare vector support; do not build retrieval yet. Verify and STOP."
+  ],
+  [
+    "Authorization boundary",
+    "Enforce server-side roles and document scope. A browser role picker is not authentication. Verify production DEV-bypass prevention and STOP."
+  ],
+  [
+    "Upload and document lifecycle",
+    "Validate supported files, store metadata, manage inventory and implement permission-protected deletion. Verify and STOP."
+  ],
+  [
+    "Parsing",
+    "Parse PDF, DOCX, TXT and Markdown; preserve structure and detect OCR needs. Failed extraction must not publish knowledge. Verify and STOP."
+  ],
+  [
+    "Chunking and metadata",
+    "Use structure-aware, hierarchical and table-aware chunks with inherited metadata and recursive fallback. Verify and STOP."
+  ],
+  [
+    "Embedding and indexing",
+    "Use configured embeddings consistently; index vectors and keyword search. Handle retries and deletion. Verify and STOP."
+  ],
+  [
+    "Hybrid retrieval",
+    "Apply explicit filters, semantic plus keyword search, fusion, reranking, deduplication and parent expansion. Verify and STOP."
+  ],
+  [
+    "Grounded generation",
+    "Generate validated structured answers, check evidence/citations, expose conflict/clarification/no-answer states. Verify and STOP."
+  ],
+  [
+    "Consumer experience",
+    "Finish sources, citations, history, follow-up questions, feedback and E2E checks. Verify and STOP."
+  ],
+  [
+    "Evaluation",
+    "Combine automated checks, LLM-as-a-Judge and human review before approval. Verify and STOP."
+  ],
+  [
+    "Observability",
+    "Capture authorised request traces, failure diagnosis, feedback and deletion auditing without secrets. Verify and STOP."
+  ],
+  [
+    "Hardening and regression",
+    "Run consumer, upload, deletion, security, resilience and accessibility checks. Zero failing required tests. STOP."
+  ],
+  [
+    "GitHub release readiness",
+    "Check secrets, README, environment examples, migrations, start command, auth, deletion recovery and retention policy. Commit the green build. STOP."
+  ],
+  [
+    "Render deployment",
+    "Deploy the verified GitHub version to Render with production authentication, configuration and health checks. Run smoke tests and STOP."
+  ]
+];
+
+function renderGuide() {
+  $("#main").innerHTML =
+    heading(
+      "Explore the complete workflow",
+      "A browser simulation of the Markdown specification, with explicit boundaries around production capabilities."
+    ) +
+    `
+      <div class="card">
+        <h2>A quick walkthrough</h2>
+
+        <ol class="help-list">
+          <li>
+            Load fictional examples, then ask about
+            <strong>request review</strong> or
+            <strong>export visibility</strong>.
+          </li>
+          <li>Open a citation to inspect the exact source passage.</li>
+          <li>
+            Switch to <strong>Uploader / Admin</strong>,
+            add TXT/Markdown, then switch to
+            <strong>Evaluator / Approver</strong> to inspect and approve it.
+          </li>
+          <li>
+            Ask about your document, then delete it as Admin
+            and reopen its old citation.
+          </li>
+          <li>
+            Switch to <strong>Observability / RAG Operations</strong>
+            to inspect the request trace.
+          </li>
+        </ol>
+
+        ${sampleButton()}
+      </div>
+
+      <div class="card">
+        <h2>Try an answer failure</h2>
+        <label for="scenario">Scenario for subsequent questions</label>
+        <select id="scenario">
+          <option value="none">Normal local processing</option>
+          <option value="retrieval">Simulated retrieval unavailable</option>
+          <option value="generation">
+            Simulated generation failure — retain sources
+          </option>
+          <option value="citation">
+            Simulated citation validation failure
+          </option>
+          <option value="reranker">
+            Simulated reranker failure — use fused order
+          </option>
+        </select>
+        <p class="small muted" style="margin-top:10px">
+          This is a demonstration control, not a real outage.
+          Clarification, missing evidence and fictional conflict states
+          are driven by the question and available documents.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Production build sequence</h2>
+        <p class="small muted">
+          Read-only learning guide.
+          No production step is being executed or marked complete.
+          The specification starts at CURRENT_STEP: 1 and requires
+          verification and a stop after every step.
+        </p>
+
+        <div class="step-list">
+          ${steps.map((item, index) => `
+            <button
+              data-step="${index}"
+              class="${index === step ? "active" : ""}"
+              aria-pressed="${index === step}"
+            >${index + 1}. ${item[0]}</button>
+          `).join("")}
+        </div>
+
+        <div class="notice" style="margin:20px 0 0">
+          <strong>Step ${step + 1}: ${steps[step][0]}</strong>
+          <p style="margin:8px 0 0">${steps[step][1]}</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>What is real here?</h2>
+
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Capability</th><th>This HTML simulator</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Text ingestion and search</td>
+                <td>
+                  Reads local TXT/Markdown; basic heading/paragraph chunks,
+                  exact terms and a small explicit synonym map.
+                  Oversized tables may split; production table-aware parsing
+                  is not implemented.
+                </td>
+              </tr>
+              <tr>
+                <td>AI and semantic retrieval</td>
+                <td>
+                  No LLM, embeddings, semantic understanding or LLM judge.
+                  Displays verbatim excerpts.
+                  Synonym matching only demonstrates the semantic branch.
+                </td>
+              </tr>
+              <tr>
+                <td>Sources and approval</td>
+                <td>
+                  Local review workflow; only active, approved records
+                  are retrieved. Current/historical labels come from
+                  supplied metadata.
+                </td>
+              </tr>
+              <tr>
+                <td>Conflicts and relationships</td>
+                <td>
+                  Conflict detection is limited to explicit fictional
+                  fixture markers. Relationships are only shown when
+                  stated in retrieved text.
+                </td>
+              </tr>
+              <tr>
+                <td>Permissions and deletion</td>
+                <td>
+                  UI role checks and local cleanup are demonstrated.
+                  Real backend authentication, document scope, 401/403,
+                  durable jobs and secure erasure require the specified server.
+                </td>
+              </tr>
+              <tr>
+                <td>Storage</td>
+                <td>
+                  Tab-scoped sessionStorage where available.
+                  No cloud database, backup or retention policy.
+                  Closing this tab normally ends the session;
+                  do not rely on browser storage for sensitive data.
+                </td>
+              </tr>
+              <tr>
+                <td>Hosting and tests</td>
+                <td>
+                  Save as index.html for static hosting.
+                  The production React/Node/PostgreSQL app,
+                  full test gates, /health and Render deployment
+                  remain separate work.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="foot">
+          <button class="danger" data-action="resetPrompt">
+            Clear this simulator session
+          </button>
+        </div>
+      </div>
+    `;
+
+  $("#scenario").value = failure;
+
+  $("#scenario").onchange = event => {
+    failure = event.target.value;
+    toast("Scenario updated for subsequent questions.");
+  };
+}
+
+function fixtures() {
+  const definitions = [
+    [
+      "Fictional: Request review — v2",
+      "Request review",
+      "2.0",
+      "current",
+      "# Request review\n" +
+      "Request review requires a reviewer before a request can be " +
+      "published in this fictional example. A rejected request returns " +
+      "to Draft.\n\n" +
+      "# Review stages\n" +
+      "| Stage | Next step |\n" +
+      "| --- | --- |\n" +
+      "| Draft | Submit for review |\n" +
+      "| In review | Reviewer approves or rejects |\n" +
+      "| Approved | Publish request |\n\n" +
+      "# Related functionality\n" +
+      "Request review records its decision in the audit log. " +
+      "The audit log stores the outcome for later inspection."
+    ],
+    [
+      "Fictional: Request review — v1",
+      "Request review",
+      "1.0",
+      "historical",
+      "# Request review history\n" +
+      "In version 1.0 of this fictional example, request review " +
+      "was optional before publishing. This passage describes " +
+      "historical behaviour only."
+    ],
+    [
+      "Fictional: Export visibility — policy A",
+      "Export visibility",
+      "1.0",
+      "current",
+      "# Export visibility\n" +
+      "Export visibility is restricted to internal users in fictional policy A.",
+      "visibility",
+      "internal"
+    ],
+    [
+      "Fictional: Export visibility — policy B",
+      "Export visibility",
+      "1.0",
+      "current",
+      "# Export visibility\n" +
+      "Export visibility includes external users in fictional policy B. " +
+      "This intentionally conflicts with fictional policy A for the same scope.",
+      "visibility",
+      "external"
+    ]
+  ];
+
+  return definitions.map((definition, index) => {
+    const document = {
+      id: "fixture-" + (index + 1),
+      title: definition[0],
+      feature: definition[1],
+      version: definition[2],
+      applicability: definition[3],
+      text: definition[4],
+      conflictGroup: definition[5] || "",
+      conflictValue: definition[6] || "",
+      product: "Fictional demo product",
+      client: "",
+      jurisdiction: "",
+      type: index === 1 ? "Release Notes" : "Product Knowledge",
+      filename: "fictional-example-" + (index + 1) + ".md",
+      created: now(),
+      uploader: "Fictional fixture loader",
+      status: "approved",
+      deletion: "active",
+      indexed: true,
+      fixture: true
+    };
+
+    return Object.assign(
+      document,
+      chunk(document.text, document.id)
+    );
+  });
+}
+
+function loadDemo() {
+  if (state.demo) {
+    toast(
+      "Examples already loaded. Clear the simulator session to restore deleted examples."
+    );
+    return;
+  }
+
+  state.docs.push(...fixtures());
+  state.demo = true;
+  save();
+  render();
+  toast("Four explicitly fictional documents loaded for demonstration.");
+}
+
+function testsHTML() {
+  return tests.length
+    ? `
+      <table>
+        <thead>
+          <tr><th>Isolated simulator check</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          ${tests.map(test => `
+            <tr>
+              <td>${esc(test.name)}</td>
+              <td>${tag(test.pass ? "PASS" : "FAIL")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `
+    : '<p class="muted small">Checks have not been run.</p>';
+}
+
+function runTests() {
+  if (!guard("evaluator")) return;
+
+  const documents = fixtures();
+  tests = [];
+
+  function check(name, test) {
+    let pass = false;
+
+    try {
+      pass = !!test();
+    } catch {}
+
+    tests.push({ name, pass });
+  }
+
+  check("Current feature retrieves an actual source", () =>
+    decide("request review", { version: "2.0" }, documents)
+      .refs.some(reference => reference.documentId === "fixture-1")
+  );
+
+  check("Table question retrieves table text", () =>
+    retrieve("review stages", {}, documents)
+      .some(reference =>
+        resolve(reference, documents)?.c.text.includes("| Stage |")
+      )
+  );
+
+  check("Related functionality stays in source text", () =>
+    retrieve("audit log", {}, documents)
+      .some(reference =>
+        resolve(reference, documents)?.c.section === "Related functionality"
+      )
+  );
+
+  check("Historical filter retrieves v1", () =>
+    retrieve("request review", { version: "1.0" }, documents)
+      .every(reference => reference.documentId === "fixture-2")
+  );
+
+  check("Defined synonym matches review", () =>
+    retrieve("authorize", {}, documents)
+      .some(reference => reference.semantic > 0 && reference.exact === 0)
+  );
+
+  check("Vague question requires clarification", () =>
+    decide("How does it work?", {}, documents).status ===
+      "clarification_required"
+  );
+
+  check("Unsupported topic does not invent an answer", () =>
+    decide("quantum nebula", {}, documents).status ===
+      "insufficient_information"
+  );
+
+  check("Explicit fixture conflict remains visible", () =>
+    decide("export visibility", {}, documents).status ===
+      "conflicting_sources"
+  );
+
+  check("Document instructions are inert escaped text", () =>
+    esc('<script>alert(1)<\/script>').startsWith("&lt;script&gt;")
+  );
+
+  check("Citation references resolve to stored chunks", () =>
+    retrieve("request review", {}, documents)
+      .every(reference => !!resolve(reference, documents))
+  );
+
+  check("Unapproved sources cannot be retrieved", () => {
+    const copy = structuredClone(documents);
+    copy.forEach(document => document.status = "awaiting_evaluation");
+    return retrieve("request review", {}, copy).length === 0;
+  });
+
+  check("Deletion failure remains excluded", () => {
+    const copy = structuredClone(documents);
+    copy[0].deletion = "deletion_failed";
+
+    return !retrieve("request review", {}, copy)
+      .some(reference => reference.documentId === copy[0].id);
+  });
+
+  check("Deleted references are unavailable", () => {
+    const copy = structuredClone(documents);
+    const reference = retrieve(
+      "request review",
+      { version: "2.0" },
+      copy
+    )[0];
+
+    copy[0].deletion = "deleted";
+    return !resolve(reference, copy);
+  });
+
+  check("Generation failure retains evidence", () => {
+    const result = decide("request review", {}, documents, "generation");
+    return result.status === "generation_failed" && result.refs.length > 0;
+  });
+
+  check("Reranker fallback retains evidence", () =>
+    retrieve("request review", {}, documents, "reranker").length > 0
+  );
+
+  check("Unknown metadata filter returns no sources", () =>
+    !retrieve(
+      "request review",
+      { client: "not present" },
+      documents
+    ).length
+  );
+
+  renderEvaluation();
+
+  announce(
+    `${tests.filter(test => test.pass).length} of ${tests.length} ` +
+    "local simulator checks passed."
+  );
+}
+
+document.addEventListener("submit", event => {
+  if (event.target.id === "followForm") {
+    event.preventDefault();
+    const query = $("#follow").value;
+    draft = query;
+    ask(query);
+  }
+});
+
+document.addEventListener("click", async event => {
+  const button = event.target.closest("button");
+  if (!button || button.disabled) return;
+
+  if (button.dataset.page) {
+    route(button.dataset.page);
+    return;
+  }
+
+  if (button.dataset.question) {
+    draft = button.dataset.question;
+    $("#question").value = draft;
+    $("#question").focus();
+    return;
+  }
+
+  if (button.dataset.step !== undefined) {
+    step = Number(button.dataset.step);
+    renderGuide();
+    document.querySelector(`[data-step="${step}"]`)?.focus();
+    return;
+  }
+
+  const action = button.dataset.action;
+  const historyId = button.dataset.id;
+  const documentId = button.dataset.doc;
+
+  try {
+    switch (action) {
+      case "close":
+        $("#dialog").close();
+        break;
+
+      case "help":
+        modal(
+          "About this simulator",
+          `
+            <p>
+              This is an offline product walkthrough,
+              not the deployed production app.
+            </p>
+            <ol class="help-list">
+              <li>
+                Load fictional examples or upload non-sensitive
+                TXT/Markdown as Admin.
+              </li>
+              <li>
+                Approve new uploads as Evaluator,
+                then ask questions as Consumer.
+              </li>
+              <li>
+                Inspect evidence, history, deletion and traces
+                using the role preview.
+              </li>
+            </ol>
+            <p>
+              No network requests or AI calls occur.
+              Uploaded text stays in this tab's browser storage
+              where available. Role switching is illustrative
+              and provides no real security.
+            </p>
+            <button data-action="guideClose">
+              Open simulator guide
+            </button>
+          `
+        );
+        break;
+
+      case "guideClose":
+        $("#dialog").close();
+        route("guide");
+        break;
+
+      case "demo":
+        loadDemo();
+        break;
+
+      case "clearFilters":
+        filter = {};
+        renderAsk();
+        break;
+
+      case "cite":
+        inspect(documentId, button.dataset.chunk);
+        break;
+
+      case "document":
+        inspect(documentId);
+        break;
+
+      case "openHistory":
+        active = historyId;
+        draft = "";
+        route("ask");
+        break;
+
+      case "refine":
+        draft = state.history.find(
+          item => item.id === historyId
+        )?.query || "";
+        renderAsk();
+        $("#question").focus();
+        break;
+
+      case "escalate": {
+        const history = state.history.find(
+          item => item.id === historyId
+        );
+
+        modal(
+          "Consult PO / SME",
+          `
+            <p>
+              Copy the question and share it through your usual
+              communication channel. This simulator does not send messages.
+            </p>
+            <label for="escalation">Question and evidence status</label>
+            <textarea id="escalation" readonly>${esc(history?.query || "")}
+
+Status: ${esc(labels[history?.status] || "")}
+Please clarify applicability and any missing source information.</textarea>
+            <button
+              style="margin-top:12px"
+              data-action="selectEscalation"
+            >Select text</button>
+          `
+        );
+        break;
+      }
+
+      case "selectEscalation":
+        $("#escalation").focus();
+        $("#escalation").select();
+        break;
+
+      case "feedbackYes": {
+        const history = state.history.find(
+          item => item.id === historyId
+        );
+
+        history.feedback = { useful: true, time: now() };
+        save();
+        render();
+        toast("Feedback saved.");
+        break;
+      }
+
+      case "feedbackNo":
+        modal(
+          "What could be better?",
+          `
+            <label for="reason">
+              Reason
+              <select id="reason">
+                ${[
+                  "Incorrect information",
+                  "Missing information",
+                  "Wrong source",
+                  "Outdated information",
+                  "Didn't answer my question",
+                  "Other"
+                ].map(reason => `<option>${reason}</option>`).join("")}
+              </select>
+            </label>
+
+            <label for="comment" style="margin-top:16px">
+              Comment — optional
+              <textarea id="comment" maxlength="1000"></textarea>
+            </label>
+
+            <div class="foot">
+              <button
+                class="primary"
+                data-action="saveFeedback"
+                data-id="${historyId}"
+              >Save feedback</button>
+            </div>
+          `
+        );
+        break;
+
+      case "saveFeedback": {
+        const history = state.history.find(
+          item => item.id === historyId
+        );
+
+        history.feedback = {
+          useful: false,
+          reason: $("#reason").value,
+          comment: $("#comment").value,
+          time: now()
+        };
+
+        save();
+        $("#dialog").close();
+        render();
+        toast("Feedback saved with the request trace.");
+        break;
+      }
+
+      case "applyList":
+        listQuery = $("#docSearch").value;
+        listState = $("#docStatus").value;
+        pageNo = 1;
+        renderManage();
+        break;
+
+      case "prev":
+        pageNo--;
+        renderManage();
+        break;
+
+      case "next":
+        pageNo++;
+        renderManage();
+        break;
+
+      case "delete":
+        deletePrompt(documentId);
+        break;
+
+      case "confirmDelete":
+        await deleteDoc(documentId, $("#failCleanup")?.checked);
+        break;
+
+      case "retryDelete":
+        await deleteDoc(documentId, false);
+        break;
+
+      case "reindex":
+        if (guard("admin") && !busy) {
+          busy = true;
+
+          try {
+            await processDoc(getDoc(documentId));
+          } finally {
+            busy = false;
+            render();
+          }
+        }
+        break;
+
+      case "review":
+        reviewPrompt(documentId);
+        break;
+
+      case "approve":
+        review(documentId, true);
+        break;
+
+      case "reject":
+        review(documentId, false);
+        break;
+
+      case "tests":
+        runTests();
+        break;
+
+      case "trace":
+        inspectTrace(historyId);
+        break;
+
+      case "searchTraces":
+        traceQuery = $("#traceSearch").value;
+        renderObservability();
+        break;
+
+      case "resetPrompt":
+        modal(
+          "Clear simulator session?",
+          `
+            <p>
+              This removes local documents, conversations and audit events
+              for this simulator. It does not affect any server or repository.
+            </p>
+            <div class="foot">
+              <button data-action="close">Cancel</button>
+              <button class="danger" data-action="reset">Clear session</button>
+            </div>
+          `
+        );
+        break;
+
+      case "reset":
+        if (busy) {
+          toast("Wait for processing to finish.");
+          break;
+        }
+
+        state = initial();
+        active = null;
+        draft = "";
+        filter = {};
+        tests = [];
+        failure = "none";
+
+        save();
+        $("#dialog").close();
+        render();
+        toast("Simulator session cleared.");
+        break;
+    }
+  } catch {
+    toast("This action could not be completed. Please try again.");
+  }
+});
+
+$("#role").onchange = event => {
+  if (busy) {
+    event.target.value = role;
+    toast("Wait for processing to finish before switching roles.");
+    return;
+  }
+
+  role = event.target.value;
+  $("#dialog").close();
+  page = "ask";
+  location.hash = "ask";
+  render();
+  announce("Preview role changed.");
+};
+
+window.addEventListener("hashchange", () => {
+  page = location.hash.slice(1) || "ask";
+  render();
+});
+
+window.addEventListener("error", () => {
+  toast(
+    "An unexpected interface error occurred. Reload to recover your saved session."
+  );
+});
+
+window.addEventListener("unhandledrejection", () => {
+  busy = false;
+  toast(
+    "An operation failed. Please retry; no raw error details are displayed."
+  );
+});
+
+save();
+page = location.hash.slice(1) || "ask";
+render();
+</script>
+</body>
+</html>
